@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/character_model.dart';
-import '../widgets/character_view.dart';
+import '../widgets/simple_character_view.dart';
 import '../widgets/control_panel.dart';
 import '../widgets/quest_board.dart';
 
@@ -26,12 +26,12 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Row(
         children: [
-          // 3D View (Main Area) - Takes 70% of screen width
+          // Simple Character View (Main Area) - Takes 70% of screen width
           Expanded(
             flex: 7,
             child: Container(
               color: Theme.of(context).colorScheme.background,
-              child: const CharacterView(),
+              child: const SimpleCharacterView(),
             ),
           ),
           
