@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+
+    <changeSet id="1" author="guilds_app">
+        <comment>Create initial tables</comment>
+        
+        <!-- Characters table -->
+        <createTable tableName="characters">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="guild_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="interests" type="text[]">
+                <constraints nullable="false"/>
+            </column>
+            <column name="skills" type="text[]">
+                <constraints nullable="false"/>
+            </column>
+            <column name="magic_abilities" type="text[]">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position_x" type="float">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position_y" type="float">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position_z" type="float">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_action" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Minions table -->
+        <createTable tableName="minions">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="task_description" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requestor" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="assignee" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="state" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reward" type="float">
+                <constraints nullable="false"/>
+            </column>
+            <column name="character_id" type="uuid">
+                <constraints nullable="false" 
+                             foreignKeyName="fk_minion_character"
+                             references="characters(id)"/>
+            </column>
+        </createTable>
+
+        <!-- Quests table -->
+        <createTable tableName="quests">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="short_description" type="varchar(500)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="category" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requestor" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="assignee" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="reward" type="float">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog> 
