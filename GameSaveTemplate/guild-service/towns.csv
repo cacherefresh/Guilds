@@ -1,0 +1,3 @@
+id,name,description,size,prosperity,location,created_at,updated_at
+1,Codehaven,The central town where most guilds are located,LARGE,HIGH,Central,2023-01-01T12:00:00Z,2023-01-01T12:00:00Z
+2,Scriptville,A small town specializing in scripting tasks,SMALL,MEDIUM,Eastern,2023-01-01T12:00:00Z,2023-01-01T12:00:00Z 

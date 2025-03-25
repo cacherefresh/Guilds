@@ -109,4 +109,6 @@ node_modules/
 # Build artifacts
 dist/
 build/
-*.log 
+*.log
+
+GameSave/ 

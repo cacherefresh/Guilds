@@ -9,6 +9,7 @@ use dotenv::dotenv;
 use config::Config;
 use log::info;
 use std::io;
+use std::sync::Mutex;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
@@ -23,6 +24,9 @@ async fn main() -> io::Result<()> {
     
     info!("Starting API Gateway at http://{}:{}", config.host, config.port);
     
+    // Initialize config
+    let config_data = web::Data::new(Mutex::new(config));
+    
     // Create and start HTTP server
     HttpServer::new(move || {
         // CORS configuration
@@ -35,11 +39,13 @@ async fn main() -> io::Result<()> {
         App::new()
             .wrap(cors)
             .wrap(Logger::default())
+            .app_data(config_data.clone())
             // API routes will be added here
             .service(
                 web::scope("/api")
                     .configure(handlers::configure_routes)
             )
+            // Add other handlers here
     })
     .bind(format!("{}:{}", config.host, config.port))?
     .run()

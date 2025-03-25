@@ -4,6 +4,7 @@ mod character_handler;
 mod reward_handler;
 mod auth_handler;
 mod health_handler;
+pub mod game_save;
 
 use actix_web::web;
 
@@ -54,4 +55,6 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
             .service(reward_handler::get_rewards)
             .service(reward_handler::claim_reward)
     );
+
+    game_save::config(cfg);
 } 
