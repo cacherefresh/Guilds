@@ -1,73 +1,47 @@
-# Guild Application
+# Guilds
 
-A scalable application featuring a 3D character in a virtual space with task management capabilities. The application consists of a Flutter frontend and a Rust backend with PostgreSQL database.
+A management application for guilds, quests, characters, and rewards with a Flutter frontend and Rust microservices backend.
 
 ## Project Structure
 
-- **Flutter App**: Flutter-based front-end application with support for multiple platforms.
-- **Rust Backend**: Actix-based API server with PostgreSQL database.
-- **Blender Models**: 3D models for character and room environment.
-- **API Specification**: OpenAPI 3.0 specification for contract-first design.
+The project is organized with a Flutter frontend and a microservices backend architecture:
 
-## Features
+```
+guilds/
+├── flutter_app/        # Flutter frontend application
+├── api/                # Legacy API (monolithic, being phased out)
+├── services/           # Microservices architecture
+│   ├── api-gateway/    # API Gateway service
+│   ├── quest-service/  # Quest management service 
+│   ├── (other services to be implemented)
+├── SECRETS/            # Contains sensitive configuration (not in Git)
+└── SECRETS_TEMPLATE/   # Templates for sensitive configuration
+```
 
-- 3D character that can walk around via keyboard controls (ASDW) or mouse clicks
-- Interactive room environment with a quest board, laptop, webcam, and turntables
-- Character abilities including shadow clone and shadow minions
-- Task management system with quest board
-- Guild and character customization
-- **Character Management**: Create and manage characters with skills, levels, and properties
-- **Quest System**: Create, assign, and complete quests with skill requirements
-- **Skill Framework**: Define skills with categories and levels for characters
-- **Guild System**: Form guilds, manage memberships, and collaborate on quests
-- **Town System**: Explore different towns with unique properties and guild presence
-
-## Getting Started
+## Environment Setup
 
 ### Prerequisites
 
 - Flutter (latest stable version)
-- Rust (latest stable version)
-- PostgreSQL
-- Liquibase (for database migrations)
-- Blender (for 3D model editing)
+- Rust 1.70+
+- Docker and docker-compose
+- PostgreSQL 15+
 
-### Setup
+### Secrets Management
 
-#### Database Setup
+The project uses a secrets management approach where sensitive information is stored in a `SECRETS` directory that is not committed to Git. There is a `SECRETS_TEMPLATE` directory that contains templates for the files needed in `SECRETS`.
 
-1. Install PostgreSQL
-2. Create a database named `guild_db`
-3. Run the Liquibase migrations:
+Before running the application, copy the template files from `SECRETS_TEMPLATE` to `SECRETS` and fill in the actual values:
 
 ```bash
-cd backend/liquibase
-liquibase --changeLogFile=changelog.xml update
+# First time setup
+cp -r SECRETS_TEMPLATE/* SECRETS/
+# Then edit each file to provide actual credentials
 ```
 
-#### Backend Setup
+## Development
 
-1. Navigate to the backend directory:
-
-```bash
-cd backend
-```
-
-2. Create a `.env` file with the following content:
-
-```
-DATABASE_URL=postgres://postgres:postgres@localhost/guild_db
-HOST=127.0.0.1
-PORT=8080
-```
-
-3. Run the Rust server:
-
-```bash
-cargo run
-```
-
-#### Frontend Setup
+### Frontend Setup (Flutter)
 
 1. Navigate to the Flutter app directory:
 
@@ -91,28 +65,77 @@ flutter run -t lib/main.dart
 flutter run -t lib/web_main.dart -d chrome
 ```
 
-## Project Requirements
+The Flutter app is designed to run outside of Docker and connect to the backend services running in containers.
 
-See [Instructions.md](whatWasAsked/Instructions.md) for detailed project requirements.
+### Backend Setup (Microservices)
 
-## API Documentation
+To run the entire backend:
 
-The API is documented using OpenAPI 3.0. The specification can be found in [docs/api/openapi.yaml](docs/api/openapi.yaml).
+```bash
+docker-compose up
+```
 
-## 3D Models
+To run a specific service:
 
-For information about the 3D models, see [blender_models/README.md](blender_models/README.md).
+```bash
+cd services/SERVICENAME
+cargo run
+```
 
-## Documentation
+### API Gateway
 
-Check out the wiki for detailed information about the game mechanics:
+The API Gateway serves as the entry point for all client requests. It routes requests to the appropriate microservice and handles cross-cutting concerns like authentication.
 
-- [Character System](wiki/mechanics/characters.md)
-- [Quest System](wiki/mechanics/quests.md)
-- [Skill System](wiki/mechanics/skills.md)
-- [Guild System](wiki/mechanics/guilds.md)
-- [Town System](wiki/mechanics/towns.md)
+Accessible at: http://localhost:8000
+
+### Quest Service
+
+The Quest Service manages the creation, retrieval, update, and deletion of quests. It provides APIs for quest management and maintains its own database schema.
+
+## Connecting Flutter to Backend
+
+The Flutter app is configured to connect to the API Gateway at `http://localhost:8000`. This is the single entry point for all backend services. You can modify the API endpoint in the Flutter app configuration if needed.
+
+## Features
+
+- 3D character that can walk around via keyboard controls (ASDW) or mouse clicks
+- Interactive room environment with a quest board, laptop, webcam, and turntables
+- Character abilities including shadow clone and shadow minions
+- Task management system with quest board
+- Guild and character customization
+- Character Management: Create and manage characters with skills, levels, and properties
+- Quest System: Create, assign, and complete quests with skill requirements
+- Skill Framework: Define skills with categories and levels for characters
+- Guild System: Form guilds, manage memberships, and collaborate on quests
+- Town System: Explore different towns with unique properties and guild presence
+
+## Database Migrations
+
+Database migrations are managed using Liquibase. The changelog files are in each service's `liquibase` directory.
+
+The migrations run automatically when using Docker, but can also be run manually:
+
+```bash
+cd services/quest-service
+liquibase --changeLogFile=liquibase/master.xml update
+```
+
+## Testing
+
+To test the backend services:
+
+```bash
+cd services/SERVICE_NAME
+cargo test
+```
+
+To test the Flutter app:
+
+```bash
+cd flutter_app
+flutter test
+```
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License. See the LICENSE file for details. 
