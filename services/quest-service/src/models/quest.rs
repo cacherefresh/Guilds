@@ -3,6 +3,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use postgres_types::FromSql;
 use utoipa::ToSchema;
+use crate::models::subtask::Subtask;
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct Quest {
@@ -15,6 +16,15 @@ pub struct Quest {
     pub xp_reward: i32,
     pub gold_reward: i32,
     pub status: String,
+    pub epic_id: Option<Uuid>,
+    pub guild_id: Option<Uuid>,
+    pub contact_character_id: Option<Uuid>,
+    pub assigned_to_id: Option<Uuid>,
+    pub assigned_to_type: Option<String>,
+    pub skills_required: Option<Vec<String>>,
+    pub quest_type: Option<String>,
+    pub creator_character_id: Option<Uuid>,
+    pub requestor_character_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -28,6 +38,17 @@ pub struct QuestCreate {
     pub reward: String,
     pub xp_reward: i32,
     pub gold_reward: i32,
+    pub epic_id: Option<Uuid>,
+    pub guild_id: Option<Uuid>,
+    pub contact_character_id: Option<Uuid>,
+    pub assigned_to_id: Option<Uuid>,
+    pub assigned_to_type: Option<String>,
+    pub skills_required: Option<Vec<String>>,
+    pub quest_type: Option<String>,
+    pub creator_character_id: Option<Uuid>,
+    pub requestor_character_id: Option<Uuid>,
+    pub prerequisite_quest_ids: Option<Vec<Uuid>>,
+    pub subtasks: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -40,10 +61,20 @@ pub struct QuestUpdate {
     pub xp_reward: Option<i32>,
     pub gold_reward: Option<i32>,
     pub status: Option<String>,
+    pub epic_id: Option<Uuid>,
+    pub guild_id: Option<Uuid>,
+    pub contact_character_id: Option<Uuid>,
+    pub assigned_to_id: Option<Uuid>,
+    pub assigned_to_type: Option<String>,
+    pub skills_required: Option<Vec<String>>,
+    pub quest_type: Option<String>,
+    pub creator_character_id: Option<Uuid>,
+    pub requestor_character_id: Option<Uuid>,
+    pub prerequisite_quest_ids: Option<Vec<Uuid>>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct QuestsResponse {
+pub struct QuestListResponse {
     pub quests: Vec<Quest>,
     pub total: i64,
     pub offset: i64,
@@ -56,6 +87,36 @@ pub struct QuestQuery {
     pub limit: Option<i64>,
     pub difficulty: Option<String>,
     pub status: Option<String>,
+    pub epic_id: Option<Uuid>,
+    pub guild_id: Option<Uuid>,
+    pub contact_character_id: Option<Uuid>,
+    pub assigned_to_id: Option<Uuid>,
+    pub assigned_to_type: Option<String>,
+    pub quest_type: Option<String>,
+    pub creator_character_id: Option<Uuid>,
+    pub requestor_character_id: Option<Uuid>,
+    pub skill_required: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct QuestDetail {
+    pub quest: Quest,
+    pub prerequisites: Vec<QuestPrerequisite>,
+    pub prerequisite_for: Vec<QuestPrerequisite>,
+    pub subtasks: Vec<Subtask>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct QuestPrerequisite {
+    pub quest_id: Uuid,
+    pub prerequisite_quest_id: Uuid,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PrerequisiteRequest {
+    pub quest_id: Uuid,
+    pub prerequisite_quest_id: Uuid,
 }
 
 impl Default for QuestQuery {
@@ -65,6 +126,15 @@ impl Default for QuestQuery {
             limit: Some(10),
             difficulty: None,
             status: None,
+            epic_id: None,
+            guild_id: None,
+            contact_character_id: None,
+            assigned_to_id: None,
+            assigned_to_type: None,
+            quest_type: None,
+            creator_character_id: None,
+            requestor_character_id: None,
+            skill_required: None,
         }
     }
 } 

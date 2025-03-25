@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+    <changeSet id="003" author="guild-developer">
+        <comment>Create adventures table</comment>
+        <createTable tableName="adventures">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <addDefaultValue tableName="adventures" columnName="id" defaultValueComputed="uuid_generate_v4()"/>
+    </changeSet>
+
+    <changeSet id="004" author="guild-developer">
+        <comment>Create epics table</comment>
+        <createTable tableName="epics">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="adventure_id" type="uuid">
+                <constraints nullable="true" foreignKeyName="fk_epic_adventure" references="adventures(id)"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <addDefaultValue tableName="epics" columnName="id" defaultValueComputed="uuid_generate_v4()"/>
+        <createIndex tableName="epics" indexName="idx_epics_adventure_id">
+            <column name="adventure_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="005" author="guild-developer">
+        <comment>Create subtasks table</comment>
+        <createTable tableName="subtasks">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quest_id" type="uuid">
+                <constraints nullable="false" foreignKeyName="fk_subtask_quest" references="quests(id)"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <addDefaultValue tableName="subtasks" columnName="id" defaultValueComputed="uuid_generate_v4()"/>
+        <createIndex tableName="subtasks" indexName="idx_subtasks_quest_id">
+            <column name="quest_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="006" author="guild-developer">
+        <comment>Add epic relationship to quests</comment>
+        <addColumn tableName="quests">
+            <column name="epic_id" type="uuid">
+                <constraints nullable="true" foreignKeyName="fk_quest_epic" references="epics(id)"/>
+            </column>
+            <column name="guild_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="contact_character_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="assigned_to_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="assigned_to_type" type="varchar(50)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        
+        <createIndex tableName="quests" indexName="idx_quests_epic_id">
+            <column name="epic_id"/>
+        </createIndex>
+        <createIndex tableName="quests" indexName="idx_quests_guild_id">
+            <column name="guild_id"/>
+        </createIndex>
+        <createIndex tableName="quests" indexName="idx_quests_contact_character_id">
+            <column name="contact_character_id"/>
+        </createIndex>
+        <createIndex tableName="quests" indexName="idx_quests_assigned_to">
+            <column name="assigned_to_id"/>
+            <column name="assigned_to_type"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="007" author="guild-developer">
+        <comment>Create quest_prerequisites table for quest dependencies</comment>
+        <createTable tableName="quest_prerequisites">
+            <column name="quest_id" type="uuid">
+                <constraints nullable="false" foreignKeyName="fk_prereq_quest" references="quests(id)"/>
+            </column>
+            <column name="prerequisite_quest_id" type="uuid">
+                <constraints nullable="false" foreignKeyName="fk_prereq_prereq_quest" references="quests(id)"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <addPrimaryKey tableName="quest_prerequisites" 
+                      columnNames="quest_id, prerequisite_quest_id" 
+                      constraintName="pk_quest_prerequisites"/>
+                      
+        <createIndex tableName="quest_prerequisites" indexName="idx_quest_prerequisites_quest">
+            <column name="quest_id"/>
+        </createIndex>
+        <createIndex tableName="quest_prerequisites" indexName="idx_quest_prerequisites_prereq">
+            <column name="prerequisite_quest_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="008" author="guild-developer">
+        <comment>Add terminology settings table for motif switcher</comment>
+        <createTable tableName="terminology_settings">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="quest_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="guild_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="adventure_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="epic_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="character_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minion_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <addDefaultValue tableName="terminology_settings" columnName="id" defaultValueComputed="uuid_generate_v4()"/>
+    </changeSet>
+
+    <changeSet id="009" author="guild-developer">
+        <comment>Insert default terminology settings</comment>
+        <insert tableName="terminology_settings">
+            <column name="name">Fantasy</column>
+            <column name="quest_term">Quest</column>
+            <column name="guild_term">Guild</column>
+            <column name="adventure_term">Adventure</column>
+            <column name="epic_term">Epic</column>
+            <column name="character_term">Character</column>
+            <column name="minion_term">Minion</column>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+        </insert>
+        
+        <insert tableName="terminology_settings">
+            <column name="name">Agile</column>
+            <column name="quest_term">Story</column>
+            <column name="guild_term">Team</column>
+            <column name="adventure_term">Project</column>
+            <column name="epic_term">Epic</column>
+            <column name="character_term">User</column>
+            <column name="minion_term">Developer</column>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+        </insert>
+        
+        <insert tableName="terminology_settings">
+            <column name="name">Business</column>
+            <column name="quest_term">Task</column>
+            <column name="guild_term">Department</column>
+            <column name="adventure_term">Initiative</column>
+            <column name="epic_term">Milestone</column>
+            <column name="character_term">Employee</column>
+            <column name="minion_term">Contractor</column>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog> 

@@ -1,28 +1,33 @@
-use deadpool_postgres::{Config, Pool, PoolError, Runtime};
-use tokio_postgres::NoTls;
-use thiserror::Error;
+use std::fmt;
+use tokio_postgres::Error as PgError;
 
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum DbError {
-    #[error("Database pool error: {0}")]
-    PoolError(#[from] PoolError),
-    
-    #[error("Database query error: {0}")]
-    PostgresError(#[from] tokio_postgres::Error),
-    
-    #[error("No data returned")]
+    PgError(PgError),
     NoDataReturned,
-    
-    #[error("Unknown error: {0}")]
     Other(String),
 }
 
-pub fn init_pool(connection_string: &str) -> Result<Pool, PoolError> {
-    let mut config = Config::new();
-    config.url = Some(connection_string.to_string());
-    config.manager = Some(deadpool_postgres::ManagerConfig {
-        recycling_method: deadpool_postgres::RecyclingMethod::Fast
-    });
-    
-    config.create_pool(Some(Runtime::Tokio1), NoTls)
+impl fmt::Display for DbError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DbError::PgError(e) => write!(f, "Database error: {}", e),
+            DbError::NoDataReturned => write!(f, "No data returned"),
+            DbError::Other(msg) => write!(f, "Database error: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for DbError {}
+
+impl From<PgError> for DbError {
+    fn from(error: PgError) -> Self {
+        DbError::PgError(error)
+    }
+}
+
+impl From<String> for DbError {
+    fn from(error: String) -> Self {
+        DbError::Other(error)
+    }
 } 
