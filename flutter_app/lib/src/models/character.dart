@@ -1,4 +1,8 @@
 import 'dart:convert';
+import 'character_animation.dart';
+import 'enums/character_state.dart';
+import 'position.dart';
+import 'skill.dart';
 
 enum CharacterType {
   player,
@@ -32,67 +36,117 @@ extension CharacterTypeExtension on CharacterType {
   }
 }
 
+/// Represents a character in the game
 class Character {
+  /// Unique identifier
   final String id;
-  final String name;
-  final CharacterType type;
-  final List<dynamic> skills;
-  final int level;
-  final int xp;
-  final String? guild;
-  final String? teamId;
-  final Map<String, dynamic> properties;
-  final DateTime createdAt;
-  final DateTime updatedAt;
   
+  /// Character name
+  final String name;
+  
+  /// Character type/class
+  final String type;
+  
+  /// Skills the character possesses
+  final List<Skill> skills;
+  
+  /// Character level
+  int level;
+  
+  /// Experience points
+  int xp;
+  
+  /// Current position in the world
+  Position position;
+  
+  /// Current state (idle, walking, etc.)
+  CharacterState state;
+  
+  /// Animation controller
+  final CharacterAnimation animation;
+  
+  /// Current mana/energy
+  int mana;
+  
+  /// Maximum mana/energy
+  int maxMana;
+  
+  /// Constructor
   Character({
     required this.id,
     required this.name,
     required this.type,
     required this.skills,
-    required this.level,
-    required this.xp,
-    this.guild,
-    this.teamId,
-    required this.properties,
-    required this.createdAt,
-    required this.updatedAt,
-  });
+    this.level = 1,
+    this.xp = 0,
+    Position? position,
+    CharacterState? state,
+    CharacterAnimation? animation,
+    this.mana = 100,
+    this.maxMana = 100,
+  }) : 
+    this.position = position ?? Position(x: 0, y: 0),
+    this.state = state ?? CharacterState.idle,
+    this.animation = animation ?? CharacterAnimation();
   
-  factory Character.fromJson(Map<String, dynamic> json) {
-    return Character(
-      id: json['id'],
-      name: json['name'],
-      type: CharacterTypeExtension.fromString(json['type']),
-      skills: json['skills'] ?? [],
-      level: json['level'],
-      xp: json['xp'],
-      guild: json['guild'],
-      teamId: json['team_id'],
-      properties: json['properties'] is String 
-          ? jsonDecode(json['properties']) 
-          : (json['properties'] ?? {}),
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
-    );
+  /// Set the character's state
+  void setState(CharacterState newState) {
+    if (state == newState) return;
+    
+    state = newState;
+    
+    // Update animation based on state
+    switch (state) {
+      case CharacterState.active:
+        animation.play('idle');
+        break;
+      case CharacterState.idle:
+        animation.play('idle');
+        break;
+      case CharacterState.walking:
+        animation.play('walk');
+        break;
+      case CharacterState.sittingOnThrone:
+        animation.play('sit_on_throne');
+        break;
+      case CharacterState.casting:
+        animation.play('cast');
+        break;
+      case CharacterState.interacting:
+        animation.play('interact');
+        break;
+    }
   }
   
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'type': type.name,
-      'skills': skills,
-      'level': level,
-      'xp': xp,
-      'guild': guild,
-      'team_id': teamId,
-      'properties': properties,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
+  /// Play a specific animation
+  void playAnimation(String animationName) {
+    animation.play(animationName);
+  }
+  
+  /// Consume mana for casting spells
+  bool consumeMana(int amount) {
+    if (mana < amount) return false;
+    
+    mana -= amount;
+    return true;
+  }
+  
+  /// Regenerate mana over time
+  void regenerateMana(int amount) {
+    mana = min(mana + amount, maxMana);
+  }
+  
+  /// Update the character state
+  void update(int deltaTimeMs) {
+    // Update animation
+    animation.update(deltaTimeMs);
+    
+    // Other update logic
   }
 }
+
+// Helper function for min value
+int min(int a, int b) => a < b ? a : b;
 
 class CharacterCreate {
   final String name;
