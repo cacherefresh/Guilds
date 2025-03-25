@@ -5,6 +5,7 @@ import '../models/character_model.dart';
 import '../widgets/quest_board.dart';
 import 'dart:math';
 import 'dart:async';
+import 'dart:convert';
 
 class SimpleCharacterView extends StatefulWidget {
   const SimpleCharacterView({Key? key}) : super(key: key);
@@ -16,6 +17,11 @@ class SimpleCharacterView extends StatefulWidget {
 class _SimpleCharacterViewState extends State<SimpleCharacterView> {
   // Room items with their positions
   final Map<String, Map<String, dynamic>> _roomItems = {
+    'dimension': {
+      'position': const Offset(500, 80),
+      'name': 'Dimension Portal',
+      'icon': Icons.blur_circular,
+    },
     'todoBoard': {
       'position': const Offset(200, 150),
       'name': 'Quest Board',
@@ -106,9 +112,15 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
   // Focus node for keyboard input
   final FocusNode _focusNode = FocusNode();
   
+  // Game state JSON store
+  Map<String, dynamic> _gameState = {};
+  
   @override
   void initState() {
     super.initState();
+    
+    // Initialize the game state store
+    _initializeGameState();
     
     // Start timers for automatic movements
     _summonMovementTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -128,6 +140,512 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     super.dispose();
   }
   
+  // Initialize game state with default values
+  void _initializeGameState() {
+    _gameState = {
+      'character': {
+        'name': 'Guild Master',
+        'position': {
+          'x': _characterPosition.dx,
+          'y': _characterPosition.dy,
+        },
+        'action': 'idle',
+        'afterimage': 'off',
+      },
+      'teammate': {
+        'position': {
+          'x': _teammatePosition.dx,
+          'y': _teammatePosition.dy,
+        },
+        'action': _teammateAction,
+      },
+      'summons': [],
+      'adventures': [
+        {
+          'id': '1',
+          'name': 'Main Campaign',
+          'description': 'The primary adventure of your guild',
+          'status': 'Active',
+          'created': DateTime.now().millisecondsSinceEpoch,
+        },
+        {
+          'id': '2',
+          'name': 'Side Missions',
+          'description': 'Optional tasks and smaller objectives',
+          'status': 'Active',
+          'created': DateTime.now().millisecondsSinceEpoch,
+        },
+      ],
+      'quests': [
+        {
+          'id': '1',
+          'title': 'Complete tutorial',
+          'description': 'Learn the basics of the guild system',
+          'status': 'Active',
+          'category': 'Tutorial',
+          'adventureId': '1',
+        },
+        {
+          'id': '2',
+          'title': 'Recruit a teammate',
+          'description': 'Find someone to join your guild',
+          'status': 'Complete',
+          'category': 'Guild',
+          'adventureId': '1',
+        },
+        {
+          'id': '3',
+          'title': 'Craft a potion',
+          'description': 'Use the alchemy table to make your first item',
+          'status': 'Pending',
+          'category': 'Crafting',
+          'adventureId': '2',
+        },
+      ],
+    };
+  }
+
+  // Reset game state to a fresh start (keep character name but reset quests and summons)
+  void _initNew() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    final characterName = characterModel.name;
+    
+    setState(() {
+      // Clear summons
+      _summonedCharacters = [];
+      _activeSummonIndex = -1;
+      
+      // Reset game state
+      _initializeGameState();
+      
+      // Keep character name
+      _gameState['character']['name'] = characterName;
+      
+      // Update character model
+      characterModel.updateAction('idle');
+      characterModel.setProperty('afterimage', 'off');
+      
+      // Reset teammate
+      _teammateAction = 'idle';
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Game state reset to default. All quests and summons cleared.'),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Save current game state to JSON
+  void _saveGameState() {
+    // Update game state with current values
+    _updateGameStateFromCurrent();
+    
+    // Convert game state to JSON string
+    final jsonString = _getGameStateJson();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Save Game State'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.save, size: 48, color: Colors.blue),
+            const SizedBox(height: 16),
+            const Text(
+              'Your game state has been saved to JSON.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              height: 150,
+              width: double.infinity,
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  jsonString,
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Copy this JSON to load it later or save to a file.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Load game state from JSON
+  void _loadGameState() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Load Game State'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.upload_file, size: 48, color: Colors.orange),
+            const SizedBox(height: 16),
+            const Text(
+              'Paste your saved game state JSON below:',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey),
+              ),
+              height: 150,
+              width: double.infinity,
+              child: TextField(
+                maxLines: null,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Paste your JSON here...',
+                  hintStyle: TextStyle(color: Colors.grey),
+                ),
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                ),
+                onChanged: (value) {
+                  // Store the input JSON temporarily
+                  _loadJsonString = value;
+                },
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              _applyLoadedGameState(_loadJsonString);
+              Navigator.of(context).pop();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Load'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Temporary storage for loaded JSON
+  String _loadJsonString = '';
+
+  // Update game state object with current values
+  void _updateGameStateFromCurrent() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    _gameState['character'] = {
+      'name': characterModel.name,
+      'position': {
+        'x': _characterPosition.dx,
+        'y': _characterPosition.dy,
+      },
+      'action': characterModel.currentAction,
+      'afterimage': characterModel.getProperty('afterimage'),
+    };
+    
+    _gameState['teammate'] = {
+      'position': {
+        'x': _teammatePosition.dx,
+        'y': _teammatePosition.dy,
+      },
+      'action': _teammateAction,
+    };
+    
+    _gameState['summons'] = _summonedCharacters.map((summon) => {
+      'type': summon['type'],
+      'name': summon['name'],
+      'position': {
+        'x': (summon['position'] as Offset).dx,
+        'y': (summon['position'] as Offset).dy,
+      },
+      'action': summon['action'],
+      'height': summon['height'],
+      'color': {
+        'value': (summon['color'] as Color).value,
+      },
+    }).toList();
+  }
+
+  // Get game state as JSON string
+  String _getGameStateJson() {
+    return const JsonEncoder.withIndent('  ').convert(_gameState);
+  }
+
+  // Apply loaded game state from JSON string
+  void _applyLoadedGameState(String jsonString) {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    try {
+      // Parse JSON string
+      final Map<String, dynamic> loadedState = jsonDecode(jsonString);
+      
+      setState(() {
+        // Store the parsed game state
+        _gameState = loadedState;
+        
+        // Apply character state
+        final characterState = loadedState['character'];
+        if (characterState != null) {
+          characterModel.name = characterState['name'] ?? 'Guild Master';
+          
+          if (characterState['position'] != null) {
+            _characterPosition = Offset(
+              characterState['position']['x'] ?? 500.0,
+              characterState['position']['y'] ?? 400.0,
+            );
+            
+            characterModel.updatePosition(
+              _characterPosition.dx,
+              0,
+              _characterPosition.dy,
+            );
+          }
+          
+          characterModel.updateAction(characterState['action'] ?? 'idle');
+          characterModel.setProperty('afterimage', characterState['afterimage'] ?? 'off');
+        }
+        
+        // Apply teammate state
+        final teammateState = loadedState['teammate'];
+        if (teammateState != null) {
+          if (teammateState['position'] != null) {
+            _teammatePosition = Offset(
+              teammateState['position']['x'] ?? 600.0,
+              teammateState['position']['y'] ?? 400.0,
+            );
+          }
+          
+          _teammateAction = teammateState['action'] ?? 'idle';
+        }
+        
+        // Apply summons state
+        _summonedCharacters = [];
+        final summonsList = loadedState['summons'] as List<dynamic>? ?? [];
+        for (final summonData in summonsList) {
+          final summonPosition = summonData['position'] != null 
+              ? Offset(
+                  summonData['position']['x'] ?? 500.0,
+                  summonData['position']['y'] ?? 400.0,
+                )
+              : const Offset(500, 400);
+              
+          final summonColorValue = summonData['color'] != null 
+              ? summonData['color']['value'] ?? 0xFF6A0DAD
+              : 0xFF6A0DAD;
+              
+          _summonedCharacters.add({
+            'type': summonData['type'] ?? 'Minion',
+            'name': summonData['name'] ?? 'Unknown Summon',
+            'position': summonPosition,
+            'action': summonData['action'] ?? 'idle',
+            'height': summonData['height'] ?? 70.0,
+            'color': Color(summonColorValue),
+          });
+        }
+        
+        // Reset active summon index
+        _activeSummonIndex = -1;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Game state loaded successfully!'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading game state: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  // Show dimension options dialog
+  void _showDimensionOptions() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    // Set character action
+    characterModel.updateAction('interacting with dimension');
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Dimension Portal'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.blur_circular, size: 50, color: Colors.purpleAccent),
+            const SizedBox(height: 16),
+            const Text(
+              'The Dimension Portal allows you to manipulate the fabric of this reality.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildDimensionActionButton(
+                  icon: Icons.save,
+                  label: 'Save',
+                  color: Colors.blue,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _saveGameState();
+                  },
+                ),
+                _buildDimensionActionButton(
+                  icon: Icons.upload_file,
+                  label: 'Load',
+                  color: Colors.orange,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _loadGameState();
+                  },
+                ),
+                _buildDimensionActionButton(
+                  icon: Icons.refresh,
+                  label: 'Init New',
+                  color: Colors.red,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _showInitNewConfirmation();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              characterModel.updateAction('idle');
+              Navigator.of(context).pop();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build dimension action button
+  Widget _buildDimensionActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Show confirmation dialog for init_new
+  void _showInitNewConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Game State?'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.warning, size: 48, color: Colors.orangeAccent),
+            SizedBox(height: 16),
+            Text(
+              'This will reset all quests and remove all summoned characters. '
+              'Your character name will be preserved.\n\n'
+              'This action cannot be undone!',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _initNew();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Move summons randomly around their summoner
   void _moveSummonsRandomly() {
     if (_summonedCharacters.isEmpty) return;
@@ -394,6 +912,9 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
       characterModel.updateAction('interacting with board');
     }
 
+    // Create a unique key for the QuestBoard
+    final questBoardKey = GlobalKey<_QuestBoardState>();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -401,7 +922,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
         content: SizedBox(
           width: MediaQuery.of(context).size.width * 0.8,
           height: MediaQuery.of(context).size.height * 0.7,
-          child: const QuestBoard(),
+          child: QuestBoard(key: questBoardKey),
         ),
         actions: [
           TextButton(
@@ -421,7 +942,16 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
           ),
         ],
       ),
-    );
+    ).then((_) {
+      // Update quest board with game state after dialog is shown
+      Future.microtask(() {
+        if (questBoardKey.currentState != null) {
+          questBoardKey.currentState!._gameState = _gameState;
+          questBoardKey.currentState!._summonedCharacters = _summonedCharacters;
+          questBoardKey.currentState!.setState(() {});
+        }
+      });
+    });
   }
 
   // Show the grimoire popup
@@ -1380,8 +1910,36 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
       final itemPosition = entry.value['position'] as Offset;
       
       if ((position - itemPosition).distance < 50) {
-        // Skip the quest board and grimoire as they have their own interaction
-        if (entry.key != 'todoBoard' && entry.key != 'grimoire') {
+        // Special handling for different items
+        if (entry.key == 'todoBoard') {
+          // Check if close enough
+          if ((position - itemPosition).distance < 80) {
+            _showQuestBoard();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Move closer to interact with the Quest Board'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else if (entry.key == 'grimoire') {
+          // Check if close enough
+          if ((position - itemPosition).distance < 80) {
+            _showGrimoire();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Move closer to interact with the Grimoire'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else if (entry.key == 'dimension') {
+          // The dimension portal can be accessed from anywhere
+          _showDimensionOptions();
+        } else {
+          // Regular items
           _interactWithItem(entry.key);
         }
         break;
