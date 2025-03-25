@@ -16,6 +16,11 @@ A scalable application featuring a 3D character in a virtual space with task man
 - Character abilities including shadow clone and shadow minions
 - Task management system with quest board
 - Guild and character customization
+- **Character Management**: Create and manage characters with skills, levels, and properties
+- **Quest System**: Create, assign, and complete quests with skill requirements
+- **Skill Framework**: Define skills with categories and levels for characters
+- **Guild System**: Form guilds, manage memberships, and collaborate on quests
+- **Town System**: Explore different towns with unique properties and guild presence
 
 ## Getting Started
 
@@ -97,6 +102,16 @@ The API is documented using OpenAPI 3.0. The specification can be found in [docs
 ## 3D Models
 
 For information about the 3D models, see [blender_models/README.md](blender_models/README.md).
+
+## Documentation
+
+Check out the wiki for detailed information about the game mechanics:
+
+- [Character System](wiki/mechanics/characters.md)
+- [Quest System](wiki/mechanics/quests.md)
+- [Skill System](wiki/mechanics/skills.md)
+- [Guild System](wiki/mechanics/guilds.md)
+- [Town System](wiki/mechanics/towns.md)
 
 ## License
 
