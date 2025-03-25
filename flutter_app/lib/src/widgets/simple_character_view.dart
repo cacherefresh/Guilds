@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/character_model.dart';
+import '../widgets/quest_board.dart';
 
 class SimpleCharacterView extends StatefulWidget {
   const SimpleCharacterView({Key? key}) : super(key: key);
@@ -128,6 +129,48 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     _checkInteractionWithItems(positionToCheck);
   }
 
+  // Show the quest board popup
+  void _showQuestBoard() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    final String characterName = _controllingTeammate ? 'Teammate' : characterModel.name;
+    
+    // Set character action to interact
+    if (_controllingTeammate) {
+      setState(() => _teammateAction = 'interacting with board');
+    } else {
+      characterModel.updateAction('interacting with board');
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$characterName\'s Quest Board'),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.8,
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: const QuestBoard(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Reset character action when closing the dialog
+              if (_controllingTeammate) {
+                setState(() => _teammateAction = 'idle');
+              } else {
+                characterModel.updateAction('idle');
+              }
+              Navigator.of(context).pop();
+              
+              // Return focus to game area
+              _focusNode.requestFocus();
+            },
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final characterModel = Provider.of<CharacterModel>(context);
@@ -183,21 +226,66 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
             ..._roomItems.entries.map((entry) {
               final item = entry.value;
               final position = item['position'] as Offset;
+              final isQuestBoard = entry.key == 'todoBoard';
               
               return Positioned(
                 left: position.dx - 25,
                 top: position.dy - 25,
                 child: Column(
                   children: [
-                    Icon(
-                      item['icon'] as IconData,
-                      color: Colors.white70,
-                      size: 50,
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Base item icon
+                        Icon(
+                          item['icon'] as IconData,
+                          color: Colors.white70,
+                          size: 50,
+                        ),
+                        
+                        // Interactive overlay for quest board
+                        if (isQuestBoard)
+                          Positioned.fill(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(25),
+                                splashColor: Colors.purple.withOpacity(0.3),
+                                onTap: () {
+                                  // Check if character is close enough to interact
+                                  final activePosition = _controllingTeammate 
+                                      ? _teammatePosition 
+                                      : _characterPosition;
+                                  if ((activePosition - position).distance < 80) {
+                                    _showQuestBoard();
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Move closer to interact with the Quest Board'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     Text(
                       item['name'] as String,
                       style: const TextStyle(color: Colors.white70),
                     ),
+                    // Only for quest board - add interaction hint
+                    if (isQuestBoard)
+                      Text(
+                        'Click to interact',
+                        style: TextStyle(
+                          color: Colors.purple[200],
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                   ],
                 ),
               );
@@ -371,6 +459,10 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                       'Click - Move to position',
                       style: TextStyle(color: Colors.white70),
                     ),
+                    Text(
+                      'Click on objects to interact',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                   ],
                 ),
               ),
@@ -418,7 +510,10 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
       final itemPosition = entry.value['position'] as Offset;
       
       if ((position - itemPosition).distance < 50) {
-        _interactWithItem(entry.key);
+        // Skip the quest board as it has its own interaction
+        if (entry.key != 'todoBoard') {
+          _interactWithItem(entry.key);
+        }
         break;
       }
     }
@@ -431,9 +526,6 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     if (_controllingTeammate) {
       // Update teammate action
       switch (itemKey) {
-        case 'todoBoard':
-          setState(() => _teammateAction = 'pointing at board');
-          break;
         case 'laptop':
           setState(() => _teammateAction = 'sitting at laptop');
           break;
@@ -447,9 +539,6 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     } else {
       // Update main character action
       switch (itemKey) {
-        case 'todoBoard':
-          characterModel.updateAction('pointing at board');
-          break;
         case 'laptop':
           characterModel.updateAction('sitting at laptop');
           break;
