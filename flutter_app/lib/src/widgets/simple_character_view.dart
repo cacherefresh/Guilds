@@ -65,6 +65,40 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
   List<Map<String, dynamic>> _summonedCharacters = [];
   int _activeSummonIndex = -1; // -1 means no summon is active
   
+  // Magic abilities with their icons and casting state
+  final List<Map<String, dynamic>> _quickCastMagic = [
+    {
+      'name': 'Shadow Clone',
+      'icon': Icons.person_outline,
+      'color': Colors.purple,
+      'isCasting': false,
+    },
+    {
+      'name': 'Minion',
+      'icon': Icons.pets,
+      'color': Colors.brown,
+      'isCasting': false,
+    },
+    {
+      'name': 'Play Music',
+      'icon': Icons.music_note,
+      'color': Colors.cyan,
+      'isCasting': false,
+    },
+    {
+      'name': 'Healing Light',
+      'icon': Icons.healing,
+      'color': Colors.green,
+      'isCasting': false,
+    },
+    {
+      'name': 'Arcane Blast',
+      'icon': Icons.flash_on,
+      'color': Colors.blue,
+      'isCasting': false,
+    },
+  ];
+  
   // Timers for automatic movements
   Timer? _summonMovementTimer;
   Timer? _idleCheckTimer;
@@ -595,6 +629,21 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
             _focusNode.requestFocus();
           },
         ),
+        ListTile(
+          title: const Text('Play Music'),
+          subtitle: const Text('Cast music magic to play sounds through the turntables'),
+          leading: const Icon(Icons.music_note, color: Colors.cyan),
+          onTap: () {
+            // Close grimoire first
+            Navigator.of(context).pop();
+            
+            // Walk to turntables and play music
+            _walkToTurntables();
+            
+            // Return focus to game area
+            _focusNode.requestFocus();
+          },
+        ),
         const Divider(),
         ListTile(
           title: const Text('Healing Light'),
@@ -939,6 +988,16 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                 top: position.dy - 25,
                 child: Column(
                   children: [
+                    // Status text - now placed above character
+                    Text(
+                      summon['action'] as String,
+                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                    ),
+                    Text(
+                      summon['name'] as String,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                    const SizedBox(height: 5),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       width: 50,
@@ -987,15 +1046,6 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      summon['name'] as String,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                    Text(
-                      summon['action'] as String,
-                      style: const TextStyle(color: Colors.white70, fontSize: 10),
-                    ),
                   ],
                 ),
               );
@@ -1007,6 +1057,21 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
               top: _characterPosition.dy - 25,
               child: Column(
                 children: [
+                  // Status text - now placed above character
+                  Text(
+                    Provider.of<CharacterModel>(context).currentAction,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  if (Provider.of<CharacterModel>(context).getProperty('afterimage') == 'on')
+                    const Text(
+                      'Afterimage: ON',
+                      style: TextStyle(color: Colors.purple, fontSize: 10),
+                    ),
+                  Text(
+                    Provider.of<CharacterModel>(context).name,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 5),
                   Stack(
                     children: [
                       // Afterimage effect
@@ -1075,23 +1140,94 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 5),
-                  Text(
-                    Provider.of<CharacterModel>(context).name,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  Text(
-                    Provider.of<CharacterModel>(context).currentAction,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                  if (Provider.of<CharacterModel>(context).getProperty('afterimage') == 'on')
-                    const Text(
-                      'Afterimage: ON',
-                      style: TextStyle(color: Colors.purple, fontSize: 10),
-                    ),
                 ],
               ),
             ),
+            
+            // Quick cast magic buttons (only for main character when active)
+            if (!_controllingTeammate && _activeSummonIndex < 0)
+              ..._quickCastMagic.asMap().entries.map((entry) {
+                final index = entry.key;
+                final magic = entry.value;
+                
+                // Calculate position in a semicircle on the right side of the character
+                final double angle = (pi / 4) + (index * (pi / 2) / (_quickCastMagic.length - 1));
+                final double radius = 60.0;
+                final double xOffset = cos(angle) * radius;
+                final double yOffset = sin(angle) * radius;
+                
+                return Positioned(
+                  left: _characterPosition.dx + xOffset - 15, // Center the button (half of width)
+                  top: _characterPosition.dy + yOffset - 15, // Center the button (half of height)
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Magic icon button
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _handleQuickCastMagic(index),
+                          customBorder: const CircleBorder(),
+                          child: Tooltip(
+                            message: magic['name'],
+                            preferBelow: false, // Show tooltip above the icon
+                            verticalOffset: 20, // Increase distance from the icon
+                            child: Container(
+                              width: 35,
+                              height: 35,
+                              decoration: BoxDecoration(
+                                color: magic['color'],
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.5),
+                                    spreadRadius: 1,
+                                    blurRadius: 3,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.8),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Icon(
+                                magic['icon'],
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      // Hourglass indicator for casting
+                      if (magic['isCasting'])
+                        Positioned(
+                          top: -5,
+                          right: -5,
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: Colors.amber,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.hourglass_empty,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }).toList(),
             
             // Teammate character representation
             Positioned(
@@ -1099,6 +1235,16 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
               top: _teammatePosition.dy - 25,
               child: Column(
                 children: [
+                  // Status text - now placed above character
+                  Text(
+                    _teammateAction,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  const Text(
+                    'Teammate',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 5),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     width: 50,
@@ -1148,15 +1294,6 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    'Teammate',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  Text(
-                    _teammateAction,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),
@@ -1312,5 +1449,409 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  void _walkToTurntables() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    final turntablesPosition = _roomItems['turntables']!['position'] as Offset;
+    
+    // Set character action to walking to turntables
+    characterModel.updateAction('walking to turntables');
+    
+    // Simulate walking animation by moving in steps
+    const steps = 10;
+    final dx = (turntablesPosition.dx - _characterPosition.dx) / steps;
+    final dy = (turntablesPosition.dy - _characterPosition.dy) / steps;
+    
+    for (int i = 1; i <= steps; i++) {
+      Future.delayed(Duration(milliseconds: i * 300), () {
+        if (mounted) {
+          setState(() {
+            _characterPosition = Offset(
+              _characterPosition.dx + dx,
+              _characterPosition.dy + dy,
+            );
+            
+            characterModel.updatePosition(
+              _characterPosition.dx,
+              0,
+              _characterPosition.dy,
+            );
+            
+            // When reached turntables
+            if (i == steps) {
+              characterModel.updateAction('using turntables');
+              // Show music selection dialog
+              _showMusicSelectionDialog();
+            }
+          });
+        }
+      });
+    }
+  }
+  
+  // Show music selection dialog
+  void _showMusicSelectionDialog() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Music Magic'),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.7,
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Select your music source:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView(
+                  children: [
+                    // MP3 Upload option
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.upload_file, color: Colors.blue),
+                        title: const Text('Upload MP3'),
+                        subtitle: const Text('Upload an MP3 file from your device'),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _showFileUploadDialog();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Spotify option
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.music_note, color: Colors.green),
+                        title: const Text('Connect Spotify'),
+                        subtitle: const Text('Play music from your Spotify account'),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _connectToSpotify();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // YouTube Music option
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.music_video, color: Colors.red),
+                        title: const Text('YouTube Music'),
+                        subtitle: const Text('Play music from YouTube Music'),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _connectToYouTubeMusic();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // SoundCloud option
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.cloud, color: Colors.orange),
+                        title: const Text('SoundCloud'),
+                        subtitle: const Text('Play music from SoundCloud'),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _connectToSoundCloud();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Reset character action when closing the dialog
+              characterModel.updateAction('idle');
+              Navigator.of(context).pop();
+              
+              // Return focus to game area
+              _focusNode.requestFocus();
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // File upload dialog
+  void _showFileUploadDialog() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Upload MP3'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.upload_file, size: 48, color: Colors.blue),
+            SizedBox(height: 16),
+            Text(
+              'This would open a file dialog to select an MP3 file from your device.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              characterModel.updateAction('playing music');
+              Navigator.of(context).pop();
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Now playing: Your MP3 file'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              
+              // Simulate stopping music after some time
+              Future.delayed(const Duration(seconds: 10), () {
+                if (mounted) {
+                  characterModel.updateAction('idle');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Music stopped'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              });
+              
+              _focusNode.requestFocus();
+            },
+            child: const Text('Simulate Upload'),
+          ),
+          TextButton(
+            onPressed: () {
+              characterModel.updateAction('idle');
+              Navigator.of(context).pop();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Connect to Spotify
+  void _connectToSpotify() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Spotify Integration'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.music_note, size: 48, color: Colors.green),
+            SizedBox(height: 16),
+            Text(
+              'This would integrate with Spotify to play music from your account.\n\n'
+              'In a full implementation, this would open Spotify authorization.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              characterModel.updateAction('playing music');
+              Navigator.of(context).pop();
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Connected to Spotify. Music is now playing.'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              
+              _focusNode.requestFocus();
+            },
+            child: const Text('Simulate Connection'),
+          ),
+          TextButton(
+            onPressed: () {
+              characterModel.updateAction('idle');
+              Navigator.of(context).pop();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Connect to YouTube Music
+  void _connectToYouTubeMusic() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('YouTube Music Integration'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.music_video, size: 48, color: Colors.red),
+            SizedBox(height: 16),
+            Text(
+              'This would integrate with YouTube Music to play songs from your account.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              characterModel.updateAction('playing music');
+              Navigator.of(context).pop();
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Connected to YouTube Music. Music is now playing.'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              
+              _focusNode.requestFocus();
+            },
+            child: const Text('Simulate Connection'),
+          ),
+          TextButton(
+            onPressed: () {
+              characterModel.updateAction('idle');
+              Navigator.of(context).pop();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Connect to SoundCloud
+  void _connectToSoundCloud() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('SoundCloud Integration'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud, size: 48, color: Colors.orange),
+            SizedBox(height: 16),
+            Text(
+              'This would integrate with SoundCloud to play tracks from your account.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              characterModel.updateAction('playing music');
+              Navigator.of(context).pop();
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Connected to SoundCloud. Music is now playing.'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              
+              _focusNode.requestFocus();
+            },
+            child: const Text('Simulate Connection'),
+          ),
+          TextButton(
+            onPressed: () {
+              characterModel.updateAction('idle');
+              Navigator.of(context).pop();
+              _focusNode.requestFocus();
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Handle quick cast magic
+  void _handleQuickCastMagic(int index) {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    // Don't allow teammate or summons to use magic
+    if (_controllingTeammate || _activeSummonIndex >= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only the main character can cast magic'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    // Set the casting state
+    setState(() {
+      _quickCastMagic[index]['isCasting'] = true;
+    });
+    
+    // Cast the magic based on its name
+    switch (_quickCastMagic[index]['name']) {
+      case 'Shadow Clone':
+        _summonCharacter('Shadow Clone');
+        break;
+      case 'Minion':
+        _summonCharacter('Minion');
+        break;
+      case 'Play Music':
+        _walkToTurntables();
+        break;
+      case 'Healing Light':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Healing spell cast. You feel rejuvenated.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        break;
+      case 'Arcane Blast':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Arcane energy bursts from your hands!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        break;
+    }
+    
+    // Reset the casting state after a delay
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _quickCastMagic[index]['isCasting'] = false;
+        });
+      }
+    });
   }
 } 

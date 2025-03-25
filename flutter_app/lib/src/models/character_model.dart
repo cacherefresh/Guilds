@@ -6,7 +6,7 @@ class CharacterModel with ChangeNotifier {
   String _guildName = "Default Guild";
   List<String> _interests = ["Music", "Programming", "Bringing AI to Life"];
   List<String> _skills = [];
-  List<String> _magicAbilities = ["Shadow Clone", "Shadow Minion"];
+  List<String> _magicAbilities = ["Shadow Clone", "Shadow Minion", "Music Magic"];
   List<MinionModel> _minions = [];
   
   // Position in the room
@@ -83,6 +83,12 @@ class CharacterModel with ChangeNotifier {
       category: category,
     );
     _minions.add(minion);
+    notifyListeners();
+  }
+  
+  // Method to play music using magic
+  void playMusic() {
+    // Logic for music playing will be handled in the view
     notifyListeners();
   }
   
