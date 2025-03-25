@@ -35,8 +35,13 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     },
   };
 
-  // Character position
+  // Main character position
   Offset _characterPosition = const Offset(250, 250);
+  
+  // Teammate character position
+  Offset _teammatePosition = const Offset(350, 250);
+  String _teammateAction = 'idle';
+  bool _controllingTeammate = false;
   
   // Focus node for keyboard input
   final FocusNode _focusNode = FocusNode();
@@ -54,39 +59,73 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     const double moveStep = 10.0;
     final characterModel = Provider.of<CharacterModel>(context, listen: false);
     
+    // Switch between main character and teammate
+    if (event.logicalKey == LogicalKeyboardKey.tab) {
+      setState(() {
+        _controllingTeammate = !_controllingTeammate;
+      });
+      return;
+    }
+    
     setState(() {
+      // Determine which character to move
+      Offset position = _controllingTeammate ? _teammatePosition : _characterPosition;
+      
       if (event.logicalKey == LogicalKeyboardKey.keyW || 
           event.logicalKey == LogicalKeyboardKey.arrowUp) {
         // Move up
-        _characterPosition = Offset(_characterPosition.dx, _characterPosition.dy - moveStep);
-        characterModel.updateAction('walking');
+        position = Offset(position.dx, position.dy - moveStep);
+        if (_controllingTeammate) {
+          _teammateAction = 'walking';
+        } else {
+          characterModel.updateAction('walking');
+        }
       } else if (event.logicalKey == LogicalKeyboardKey.keyA || 
                  event.logicalKey == LogicalKeyboardKey.arrowLeft) {
         // Move left
-        _characterPosition = Offset(_characterPosition.dx - moveStep, _characterPosition.dy);
-        characterModel.updateAction('walking');
+        position = Offset(position.dx - moveStep, position.dy);
+        if (_controllingTeammate) {
+          _teammateAction = 'walking';
+        } else {
+          characterModel.updateAction('walking');
+        }
       } else if (event.logicalKey == LogicalKeyboardKey.keyS || 
                  event.logicalKey == LogicalKeyboardKey.arrowDown) {
         // Move down
-        _characterPosition = Offset(_characterPosition.dx, _characterPosition.dy + moveStep);
-        characterModel.updateAction('walking');
+        position = Offset(position.dx, position.dy + moveStep);
+        if (_controllingTeammate) {
+          _teammateAction = 'walking';
+        } else {
+          characterModel.updateAction('walking');
+        }
       } else if (event.logicalKey == LogicalKeyboardKey.keyD || 
                  event.logicalKey == LogicalKeyboardKey.arrowRight) {
         // Move right
-        _characterPosition = Offset(_characterPosition.dx + moveStep, _characterPosition.dy);
-        characterModel.updateAction('walking');
+        position = Offset(position.dx + moveStep, position.dy);
+        if (_controllingTeammate) {
+          _teammateAction = 'walking';
+        } else {
+          characterModel.updateAction('walking');
+        }
+      }
+      
+      // Update the appropriate character position
+      if (_controllingTeammate) {
+        _teammatePosition = position;
+      } else {
+        _characterPosition = position;
+        // Update character model position
+        characterModel.updatePosition(
+          _characterPosition.dx,
+          0,
+          _characterPosition.dy,
+        );
       }
     });
     
-    // Update character model position
-    characterModel.updatePosition(
-      _characterPosition.dx,
-      0,
-      _characterPosition.dy,
-    );
-    
     // Check for interaction with items
-    _checkInteractionWithItems(_characterPosition);
+    Offset positionToCheck = _controllingTeammate ? _teammatePosition : _characterPosition;
+    _checkInteractionWithItems(positionToCheck);
   }
 
   @override
@@ -104,20 +143,23 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
       autofocus: true,
       child: GestureDetector(
         onTapDown: (details) {
-          // Move character to tapped position
+          // Move the active character to tapped position
           setState(() {
-            _characterPosition = details.localPosition;
+            if (_controllingTeammate) {
+              _teammatePosition = details.localPosition;
+            } else {
+              _characterPosition = details.localPosition;
+              // Update the character model position
+              characterModel.updatePosition(
+                _characterPosition.dx,
+                0,
+                _characterPosition.dy,
+              );
+            }
           });
           
-          // Update the character model position
-          characterModel.updatePosition(
-            _characterPosition.dx,
-            0,
-            _characterPosition.dy,
-          );
-          
           // Check if tapped near any room item
-          _checkInteractionWithItems(details.localPosition);
+          _checkInteractionWithItems(_controllingTeammate ? _teammatePosition : _characterPosition);
           
           // Make sure we keep focus for keyboard input
           _focusNode.requestFocus();
@@ -161,7 +203,76 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
               );
             }),
             
-            // Simple character representation
+            // Teammate character representation
+            Positioned(
+              left: _teammatePosition.dx - 25,
+              top: _teammatePosition.dy - 25,
+              child: Column(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 50,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: _controllingTeammate 
+                          ? const Color(0xFF00C853) // Green for active
+                          : const Color(0xFF00C853).withOpacity(0.7), // Dimmed when inactive
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          spreadRadius: 1,
+                          blurRadius: 3,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                      border: _controllingTeammate
+                          ? Border.all(color: Colors.white, width: 2)
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'T', // Teammate
+                              style: TextStyle(
+                                color: Color(0xFF00C853),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Container(
+                          width: 40,
+                          height: 30,
+                          color: Colors.black,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Teammate',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  Text(
+                    _teammateAction,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Main character representation
             Positioned(
               left: _characterPosition.dx - 25,
               top: _characterPosition.dy - 25,
@@ -172,7 +283,9 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                     width: 50,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6A0DAD),
+                      color: !_controllingTeammate 
+                          ? const Color(0xFF6A0DAD) // Purple for active
+                          : const Color(0xFF6A0DAD).withOpacity(0.7), // Dimmed when inactive
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
@@ -182,6 +295,9 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                           offset: const Offset(0, 2),
                         ),
                       ],
+                      border: !_controllingTeammate
+                          ? Border.all(color: Colors.white, width: 2)
+                          : null,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -248,6 +364,10 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                       style: TextStyle(color: Colors.white70),
                     ),
                     Text(
+                      'Tab - Switch between characters',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    Text(
                       'Click - Move to position',
                       style: TextStyle(color: Colors.white70),
                     ),
@@ -256,7 +376,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
               ),
             ),
             
-            // Focus indicator (to show keyboard focus is active)
+            // Focus indicator and active character
             Positioned(
               right: 20,
               top: 20,
@@ -272,13 +392,15 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      _focusNode.hasFocus ? Icons.keyboard : Icons.keyboard_off,
+                      _focusNode.hasFocus ? Icons.keyboard : Icons.keyboard_hide,
                       color: Colors.white,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      _focusNode.hasFocus ? 'Keyboard Active' : 'Click to Enable Keyboard',
+                      _focusNode.hasFocus 
+                          ? 'Controlling: ${_controllingTeammate ? "Teammate" : "Main"}' 
+                          : 'Click to Enable Keyboard',
                       style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ],
@@ -306,24 +428,44 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     final characterModel = Provider.of<CharacterModel>(context, listen: false);
     
     // Update character action based on the item
-    switch (itemKey) {
-      case 'todoBoard':
-        characterModel.updateAction('pointing at board');
-        break;
-      case 'laptop':
-        characterModel.updateAction('sitting at laptop');
-        break;
-      case 'turntables':
-        characterModel.updateAction('using turntables');
-        break;
-      case 'webcam':
-        characterModel.updateAction('thinking');
-        break;
+    if (_controllingTeammate) {
+      // Update teammate action
+      switch (itemKey) {
+        case 'todoBoard':
+          setState(() => _teammateAction = 'pointing at board');
+          break;
+        case 'laptop':
+          setState(() => _teammateAction = 'sitting at laptop');
+          break;
+        case 'turntables':
+          setState(() => _teammateAction = 'using turntables');
+          break;
+        case 'webcam':
+          setState(() => _teammateAction = 'thinking');
+          break;
+      }
+    } else {
+      // Update main character action
+      switch (itemKey) {
+        case 'todoBoard':
+          characterModel.updateAction('pointing at board');
+          break;
+        case 'laptop':
+          characterModel.updateAction('sitting at laptop');
+          break;
+        case 'turntables':
+          characterModel.updateAction('using turntables');
+          break;
+        case 'webcam':
+          characterModel.updateAction('thinking');
+          break;
+      }
     }
     
+    String characterName = _controllingTeammate ? 'Teammate' : characterModel.name;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Interacting with ${_roomItems[itemKey]!['name']}'),
+        content: Text('$characterName is interacting with ${_roomItems[itemKey]!['name']}'),
         duration: const Duration(seconds: 2),
       ),
     );
