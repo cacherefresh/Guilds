@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+    <changeSet id="001" author="guild-developer">
+        <comment>Create quests table</comment>
+        
+        <createTable tableName="quests">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="difficulty" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="required_skills" type="text[]">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reward" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="xp_reward" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="gold_reward" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <!-- Default UUID extension -->
+        <sql>CREATE EXTENSION IF NOT EXISTS "uuid-ossp";</sql>
+        
+        <!-- Default value for id using uuid-ossp -->
+        <addDefaultValue tableName="quests" columnName="id" defaultValueComputed="uuid_generate_v4()"/>
+        
+        <!-- Create indexes -->
+        <createIndex tableName="quests" indexName="idx_quests_status">
+            <column name="status"/>
+        </createIndex>
+        
+        <createIndex tableName="quests" indexName="idx_quests_difficulty">
+            <column name="difficulty"/>
+        </createIndex>
+        
+        <createIndex tableName="quests" indexName="idx_quests_created_at">
+            <column name="created_at"/>
+        </createIndex>
+        
+    </changeSet>
+    
+    <changeSet id="002" author="guild-developer">
+        <comment>Add sample data</comment>
+        
+        <insert tableName="quests">
+            <column name="title">Slay the Dragon</column>
+            <column name="description">A fearsome dragon is terrorizing the village. Defeat it and bring peace.</column>
+            <column name="difficulty">HARD</column>
+            <column name="required_skills" valueClobFile="sql/required_skills_1.sql"/>
+            <column name="reward">Dragon scale armor</column>
+            <column name="xp_reward">500</column>
+            <column name="gold_reward">1000</column>
+            <column name="status">AVAILABLE</column>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+        </insert>
+        
+        <insert tableName="quests">
+            <column name="title">Deliver a Package</column>
+            <column name="description">Deliver this important package to the neighboring town safely.</column>
+            <column name="difficulty">EASY</column>
+            <column name="required_skills" valueClobFile="sql/required_skills_2.sql"/>
+            <column name="reward">Sturdy boots</column>
+            <column name="xp_reward">100</column>
+            <column name="gold_reward">200</column>
+            <column name="status">AVAILABLE</column>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+        </insert>
+        
+        <insert tableName="quests">
+            <column name="title">Clear the Mines</column>
+            <column name="description">The local mines are infested with goblins. Clear them out to restore mining operations.</column>
+            <column name="difficulty">MEDIUM</column>
+            <column name="required_skills" valueClobFile="sql/required_skills_3.sql"/>
+            <column name="reward">Miner's pickaxe</column>
+            <column name="xp_reward">300</column>
+            <column name="gold_reward">500</column>
+            <column name="status">AVAILABLE</column>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog> 

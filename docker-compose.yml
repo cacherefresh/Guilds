@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: guilds_postgres
+    env_file:
+      - ./SECRETS/api/database.env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  liquibase:
+    image: liquibase/liquibase:4.20
+    container_name: guilds_liquibase
+    volumes:
+      - ./services/quest-service/liquibase:/liquibase/changelog/quest-service
+    command: --changeLogFile=changelog/quest-service/master.xml --url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME} --username=${DB_USER} --password=${DB_PASSWORD} update
+    env_file:
+      - ./SECRETS/api/database.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: guilds_api_gateway
+    env_file:
+      - ./SECRETS/services/api-gateway/database.env
+    environment:
+      SECRETS_PATH: /secrets
+    volumes:
+      - ./SECRETS/services/api-gateway:/secrets
+    ports:
+      - "8000:8000"
+    depends_on:
+      - quest-service
+      - liquibase
+
+  quest-service:
+    build:
+      context: ./services/quest-service
+      dockerfile: Dockerfile
+    container_name: guilds_quest_service
+    env_file:
+      - ./SECRETS/services/quest-service/database.env
+    environment:
+      SECRETS_PATH: /secrets
+    volumes:
+      - ./SECRETS/services/quest-service:/secrets
+    ports:
+      - "8001:8001"
+    depends_on:
+      - liquibase
+
+volumes:
+  postgres_data:
+  quest_cache:
+  guild_cache:
+  character_cache:
+  reward_cache: 

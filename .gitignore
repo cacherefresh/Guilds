@@ -89,4 +89,24 @@ yarn-error.log*
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
+
+# Secrets folder (sensitive information)
+/SECRETS/
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# IDE and editor folders
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+build/
+*.log 
