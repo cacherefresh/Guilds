@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'minion_model.dart';
 
-class CharacterModel extends ChangeNotifier {
+class CharacterModel with ChangeNotifier {
   String _name = "Default Character";
   String _guildName = "Default Guild";
   List<String> _interests = ["Music", "Programming", "Bringing AI to Life"];
@@ -16,6 +16,11 @@ class CharacterModel extends ChangeNotifier {
   
   // Current action
   String _currentAction = "idle"; // idle, walking, thinking, pointing
+  
+  // Character properties
+  final Map<String, String> _properties = {
+    'afterimage': 'off'
+  };
   
   // Getters
   String get name => _name;
@@ -113,5 +118,16 @@ class CharacterModel extends ChangeNotifier {
   void pointAt(double x, double y, double z) {
     updateAction("pointing");
     // Logic for pointing at a specific location
+  }
+  
+  // Get a character property
+  String getProperty(String key) {
+    return _properties[key] ?? '';
+  }
+  
+  // Set a character property
+  void setProperty(String key, String value) {
+    _properties[key] = value;
+    notifyListeners();
   }
 } 

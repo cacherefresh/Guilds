@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/character_model.dart';
 import '../widgets/quest_board.dart';
 import 'dart:math';
+import 'dart:async';
 
 class SimpleCharacterView extends StatefulWidget {
   const SimpleCharacterView({Key? key}) : super(key: key);
@@ -16,37 +17,47 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
   // Room items with their positions
   final Map<String, Map<String, dynamic>> _roomItems = {
     'todoBoard': {
-      'position': const Offset(100, 100),
+      'position': const Offset(200, 150),
       'name': 'Quest Board',
       'icon': Icons.assignment,
     },
     'laptop': {
-      'position': const Offset(300, 200),
+      'position': const Offset(500, 300),
       'name': 'Laptop',
       'icon': Icons.laptop,
     },
     'turntables': {
-      'position': const Offset(500, 400),
+      'position': const Offset(800, 500),
       'name': 'Turntables',
       'icon': Icons.music_note,
     },
     'webcam': {
-      'position': const Offset(300, 100),
+      'position': const Offset(300, 200),
       'name': 'Webcam',
       'icon': Icons.videocam,
     },
     'grimoire': {
-      'position': const Offset(450, 150),
+      'position': const Offset(650, 200),
       'name': 'Grimoire',
       'icon': Icons.book,
+    },
+    'mainThrone': {
+      'position': const Offset(500, 600),
+      'name': 'Your Throne',
+      'icon': Icons.chair,
+    },
+    'teammateThrone': {
+      'position': const Offset(700, 600),
+      'name': 'Teammate Throne',
+      'icon': Icons.event_seat,
     },
   };
 
   // Main character position
-  Offset _characterPosition = const Offset(250, 250);
+  Offset _characterPosition = const Offset(500, 400);
   
   // Teammate character position
-  Offset _teammatePosition = const Offset(350, 250);
+  Offset _teammatePosition = const Offset(600, 400);
   String _teammateAction = 'idle';
   bool _controllingTeammate = false;
   
@@ -54,13 +65,170 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
   List<Map<String, dynamic>> _summonedCharacters = [];
   int _activeSummonIndex = -1; // -1 means no summon is active
   
+  // Timers for automatic movements
+  Timer? _summonMovementTimer;
+  Timer? _idleCheckTimer;
+  
   // Focus node for keyboard input
   final FocusNode _focusNode = FocusNode();
   
   @override
+  void initState() {
+    super.initState();
+    
+    // Start timers for automatic movements
+    _summonMovementTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _moveSummonsRandomly();
+    });
+    
+    _idleCheckTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      _checkAndHandleIdleCharacters();
+    });
+  }
+  
+  @override
   void dispose() {
+    _summonMovementTimer?.cancel();
+    _idleCheckTimer?.cancel();
     _focusNode.dispose();
     super.dispose();
+  }
+  
+  // Move summons randomly around their summoner
+  void _moveSummonsRandomly() {
+    if (_summonedCharacters.isEmpty) return;
+    
+    setState(() {
+      for (int i = 0; i < _summonedCharacters.length; i++) {
+        // Skip if this summon is being actively controlled
+        if (_activeSummonIndex == i) continue;
+        
+        final summon = _summonedCharacters[i];
+        
+        // Create random movement around the main character
+        final double randomX = (_characterPosition.dx + (100 * (Random().nextDouble() * 2 - 1))).clamp(100, 900);
+        final double randomY = (_characterPosition.dy + (100 * (Random().nextDouble() * 2 - 1))).clamp(100, 600);
+        
+        // Update summon position and action
+        summon['position'] = Offset(randomX, randomY);
+        summon['action'] = 'walking';
+        
+        // After 2 seconds, reset action to idle
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() {
+              if (i < _summonedCharacters.length) {
+                _summonedCharacters[i]['action'] = 'idle';
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+  
+  // Check if characters are idle and move them to thrones
+  void _checkAndHandleIdleCharacters() {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    
+    // Check main character
+    if (characterModel.currentAction == 'idle' && 
+        !_controllingTeammate && 
+        _activeSummonIndex < 0 &&
+        (_characterPosition - _roomItems['mainThrone']!['position'] as Offset).distance > 50) {
+      
+      setState(() {
+        _moveCharacterToThrone(false);
+      });
+    }
+    
+    // Check teammate
+    if (_teammateAction == 'idle' && 
+        (_teammatePosition - _roomItems['teammateThrone']!['position'] as Offset).distance > 50) {
+      
+      setState(() {
+        _moveTeammateToThrone();
+      });
+    }
+  }
+  
+  // Move main character to throne
+  void _moveCharacterToThrone(bool immediate) {
+    final characterModel = Provider.of<CharacterModel>(context, listen: false);
+    final thronePosition = _roomItems['mainThrone']!['position'] as Offset;
+    
+    if (immediate) {
+      _characterPosition = thronePosition;
+      characterModel.updateAction('sitting on throne');
+      characterModel.updatePosition(
+        _characterPosition.dx,
+        0,
+        _characterPosition.dy,
+      );
+    } else {
+      characterModel.updateAction('walking to throne');
+      
+      // Simulate walking animation by moving in steps
+      const steps = 10;
+      final dx = (thronePosition.dx - _characterPosition.dx) / steps;
+      final dy = (thronePosition.dy - _characterPosition.dy) / steps;
+      
+      for (int i = 1; i <= steps; i++) {
+        Future.delayed(Duration(milliseconds: i * 300), () {
+          if (mounted) {
+            setState(() {
+              _characterPosition = Offset(
+                _characterPosition.dx + dx,
+                _characterPosition.dy + dy,
+              );
+              
+              characterModel.updatePosition(
+                _characterPosition.dx,
+                0,
+                _characterPosition.dy,
+              );
+              
+              // When reached throne
+              if (i == steps) {
+                characterModel.updateAction('sitting on throne');
+              }
+            });
+          }
+        });
+      }
+    }
+  }
+  
+  // Move teammate to throne
+  void _moveTeammateToThrone() {
+    final thronePosition = _roomItems['teammateThrone']!['position'] as Offset;
+    
+    setState(() {
+      _teammateAction = 'walking to throne';
+    });
+    
+    // Simulate walking animation by moving in steps
+    const steps = 10;
+    final dx = (thronePosition.dx - _teammatePosition.dx) / steps;
+    final dy = (thronePosition.dy - _teammatePosition.dy) / steps;
+    
+    for (int i = 1; i <= steps; i++) {
+      Future.delayed(Duration(milliseconds: i * 300), () {
+        if (mounted) {
+          setState(() {
+            _teammatePosition = Offset(
+              _teammatePosition.dx + dx,
+              _teammatePosition.dy + dy,
+            );
+            
+            // When reached throne
+            if (i == steps) {
+              _teammateAction = 'sitting on throne';
+            }
+          });
+        }
+      });
+    }
   }
   
   // Handle keyboard input for ASDW controls
@@ -530,27 +698,45 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     final characterModel = Provider.of<CharacterModel>(context, listen: false);
     
     // Create random offset near the character
-    final double randomX = (_characterPosition.dx + (50 * (Random().nextDouble() * 2 - 1))).clamp(100, 500);
-    final double randomY = (_characterPosition.dy + (50 * (Random().nextDouble() * 2 - 1))).clamp(100, 400);
+    final double randomX = (_characterPosition.dx + (80 * (Random().nextDouble() * 2 - 1))).clamp(100, 900);
+    final double randomY = (_characterPosition.dy + (80 * (Random().nextDouble() * 2 - 1))).clamp(100, 600);
+    
+    // Determine height based on type
+    final double height = type == 'Shadow Clone' ? 90.0 : 70.0;
     
     // Create new summon
     final newSummon = {
       'type': type,
       'name': type == 'Shadow Clone' 
           ? '${characterModel.name}\'s Clone' 
-          : 'Minion ${_summonedCharacters.where((s) => s['type'] == 'Minion').length + 1}',
+          : 'Shadow Minion ${_summonedCharacters.where((s) => s['type'] == 'Minion').length + 1}',
       'position': Offset(randomX, randomY),
       'action': 'idle',
       'color': type == 'Shadow Clone' 
-          ? const Color(0xFF6A0DAD).withOpacity(0.8) 
-          : const Color(0xFFBF360C),
+          ? const Color(0xFF6A0DAD).withOpacity(0.9) 
+          : const Color(0xFF4A148C),
+      'height': height,
       'quests': [],
     };
     
     setState(() {
+      // Toggle afterimage effect on main character
+      characterModel.updateAction('summoning${type == 'Shadow Clone' ? ' clone' : ''}');
+      
       _summonedCharacters.add(newSummon);
       // Automatically control the new summon
       _activeSummonIndex = _summonedCharacters.length - 1;
+      
+      // Add afterimage effect
+      characterModel.setProperty('afterimage', 'on');
+    });
+    
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          characterModel.updateAction('idle');
+        });
+      }
     });
     
     ScaffoldMessenger.of(context).showSnackBar(
@@ -609,7 +795,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
         },
         child: Stack(
           children: [
-            // Room background
+            // Room background - now larger guild hall
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF121212),
@@ -617,9 +803,14 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                   color: const Color(0xFF6A0DAD),
                   width: 3,
                 ),
+                image: const DecorationImage(
+                  image: AssetImage('assets/images/guild_hall_bg.png'),
+                  fit: BoxFit.cover,
+                  opacity: 0.4,
+                ),
               ),
-              width: double.infinity,
-              height: double.infinity,
+              width: 1000,
+              height: 800,
             ),
             
             // Room items
@@ -741,6 +932,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
               final summon = entry.value;
               final position = summon['position'] as Offset;
               final isActive = _activeSummonIndex == index;
+              final height = summon['height'] as double;
               
               return Positioned(
                 left: position.dx - 25,
@@ -750,7 +942,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       width: 50,
-                      height: 80,
+                      height: height,
                       decoration: BoxDecoration(
                         color: isActive
                             ? summon['color'] as Color
@@ -780,9 +972,9 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                             ),
                             child: Center(
                               child: Icon(
-                                summon['type'] == 'Shadow Clone' ? Icons.person_outline : Icons.pets,
-                                color: summon['type'] == 'Shadow Clone' ? Colors.purple : Colors.brown,
-                                size: 20,
+                                summon['type'] == 'Shadow Clone' ? Icons.person_outline : Icons.blur_on,
+                                color: summon['type'] == 'Shadow Clone' ? Colors.purple : Colors.deepPurple,
+                                size: summon['type'] == 'Shadow Clone' ? 20 : 18,
                               ),
                             ),
                           ),
@@ -808,6 +1000,98 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                 ),
               );
             }),
+            
+            // Main character representation with afterimage effect
+            Positioned(
+              left: _characterPosition.dx - 25,
+              top: _characterPosition.dy - 25,
+              child: Column(
+                children: [
+                  Stack(
+                    children: [
+                      // Afterimage effect
+                      if (Provider.of<CharacterModel>(context).getProperty('afterimage') == 'on')
+                        Positioned(
+                          right: -5,
+                          child: Container(
+                            width: 50,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6A0DAD).withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      // Main character
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 50,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: !_controllingTeammate && _activeSummonIndex < 0
+                              ? const Color(0xFF6A0DAD) // Purple for active
+                              : const Color(0xFF6A0DAD).withOpacity(0.7), // Dimmed when inactive
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.5),
+                              spreadRadius: 1,
+                              blurRadius: 3,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                          border: !_controllingTeammate && _activeSummonIndex < 0
+                              ? Border.all(color: Colors.white, width: 2)
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  Provider.of<CharacterModel>(context).name[0],
+                                  style: const TextStyle(
+                                    color: Color(0xFF6A0DAD),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Container(
+                              width: 40,
+                              height: 30,
+                              color: Colors.black,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    Provider.of<CharacterModel>(context).name,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  Text(
+                    Provider.of<CharacterModel>(context).currentAction,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  if (Provider.of<CharacterModel>(context).getProperty('afterimage') == 'on')
+                    const Text(
+                      'Afterimage: ON',
+                      style: TextStyle(color: Colors.purple, fontSize: 10),
+                    ),
+                ],
+              ),
+            ),
             
             // Teammate character representation
             Positioned(
@@ -872,75 +1156,6 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                   ),
                   Text(
                     _teammateAction,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Main character representation
-            Positioned(
-              left: _characterPosition.dx - 25,
-              top: _characterPosition.dy - 25,
-              child: Column(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: 50,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: !_controllingTeammate 
-                          ? const Color(0xFF6A0DAD) // Purple for active
-                          : const Color(0xFF6A0DAD).withOpacity(0.7), // Dimmed when inactive
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
-                          spreadRadius: 1,
-                          blurRadius: 3,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                      border: !_controllingTeammate
-                          ? Border.all(color: Colors.white, width: 2)
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              characterModel.name[0],
-                              style: const TextStyle(
-                                color: Color(0xFF6A0DAD),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Container(
-                          width: 40,
-                          height: 30,
-                          color: Colors.black,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    characterModel.name,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  Text(
-                    characterModel.currentAction,
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
