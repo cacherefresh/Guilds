@@ -15,7 +15,7 @@ class GameLoop {
   void start() {
     _lastFrameTime = DateTime.now().millisecondsSinceEpoch;
     
-    _timer = Timer.periodic(Duration(milliseconds: 16), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
       final currentTime = DateTime.now().millisecondsSinceEpoch;
       final deltaTime = currentTime - _lastFrameTime;
       _lastFrameTime = currentTime;

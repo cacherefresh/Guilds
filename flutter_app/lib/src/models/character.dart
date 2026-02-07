@@ -85,9 +85,9 @@ class Character {
     this.mana = 100,
     this.maxMana = 100,
   }) : 
-    this.position = position ?? Position(x: 0, y: 0),
-    this.state = state ?? CharacterState.idle,
-    this.animation = animation ?? CharacterAnimation();
+    position = position ?? const Position(x: 0, y: 0),
+    state = state ?? CharacterState.idle,
+    animation = animation ?? CharacterAnimation();
   
   /// Set the character's state
   void setState(CharacterState newState) {

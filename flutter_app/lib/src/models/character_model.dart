@@ -4,10 +4,10 @@ import 'minion_model.dart';
 class CharacterModel with ChangeNotifier {
   String _name = "Default Character";
   String _guildName = "Default Guild";
-  List<String> _interests = ["Music", "Programming", "Bringing AI to Life"];
-  List<String> _skills = [];
-  List<String> _magicAbilities = ["Shadow Clone", "Shadow Minion", "Music Magic"];
-  List<MinionModel> _minions = [];
+  final List<String> _interests = ["Music", "Programming", "Bringing AI to Life"];
+  final List<String> _skills = [];
+  final List<String> _magicAbilities = ["Shadow Clone", "Shadow Minion", "Music Magic"];
+  final List<MinionModel> _minions = [];
   
   // Position in the room
   double _positionX = 0.0;

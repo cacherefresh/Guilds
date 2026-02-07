@@ -372,37 +372,42 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
   void _updateGameStateFromCurrent() {
     final characterModel = Provider.of<CharacterModel>(context, listen: false);
     
-    _gameState['character'] = {
-      'name': characterModel.name,
-      'position': {
-        'x': _characterPosition.dx,
-        'y': _characterPosition.dy,
+    _gameState = {
+      'character': {
+        'name': characterModel.name,
+        'position': {
+          'x': _characterPosition.dx,
+          'y': _characterPosition.dy,
+        },
+        'action': characterModel.currentAction,
+        'afterimage': characterModel.getProperty('afterimage'),
       },
-      'action': characterModel.currentAction,
-      'afterimage': characterModel.getProperty('afterimage'),
+      'teammate': {
+        'position': {
+          'x': _teammatePosition.dx,
+          'y': _teammatePosition.dy,
+        },
+        'action': _teammateAction,
+      },
+      'summons': _summonedCharacters.map((summon) => {
+        'type': summon['type'],
+        'name': summon['name'],
+        'position': {
+          'x': (summon['position'] as Offset).dx,
+          'y': (summon['position'] as Offset).dy,
+        },
+        'action': summon['action'],
+        'height': summon['height'],
+        'color': {
+          'value': (summon['color'] as Color).value,
+        },
+        'quests': summon['quests'] ?? [],
+      }).toList(),
+      'adventures': _gameState['adventures'] ?? [],
+      'quests': _gameState['quests'] ?? [],
+      'activeSummonIndex': _activeSummonIndex,
+      'controllingTeammate': _controllingTeammate,
     };
-    
-    _gameState['teammate'] = {
-      'position': {
-        'x': _teammatePosition.dx,
-        'y': _teammatePosition.dy,
-      },
-      'action': _teammateAction,
-    };
-    
-    _gameState['summons'] = _summonedCharacters.map((summon) => {
-      'type': summon['type'],
-      'name': summon['name'],
-      'position': {
-        'x': (summon['position'] as Offset).dx,
-        'y': (summon['position'] as Offset).dy,
-      },
-      'action': summon['action'],
-      'height': summon['height'],
-      'color': {
-        'value': (summon['color'] as Color).value,
-      },
-    }).toList();
   }
 
   // Get game state as JSON string
@@ -479,11 +484,13 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
             'action': summonData['action'] ?? 'idle',
             'height': summonData['height'] ?? 70.0,
             'color': Color(summonColorValue),
+            'quests': summonData['quests'] ?? [],
           });
         }
         
-        // Reset active summon index
-        _activeSummonIndex = -1;
+        // Restore control state
+        _activeSummonIndex = loadedState['activeSummonIndex'] ?? -1;
+        _controllingTeammate = loadedState['controllingTeammate'] ?? false;
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -687,7 +694,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     if (characterModel.currentAction == 'idle' && 
         !_controllingTeammate && 
         _activeSummonIndex < 0 &&
-        (_characterPosition - _roomItems['mainThrone']!['position'] as Offset).distance > 50) {
+        (_characterPosition - _roomItems['mainThrone']!['position']).distance > 50) {
       
       setState(() {
         _moveCharacterToThrone(false);
@@ -696,7 +703,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     
     // Check teammate
     if (_teammateAction == 'idle' && 
-        (_teammatePosition - _roomItems['teammateThrone']!['position'] as Offset).distance > 50) {
+        (_teammatePosition - _roomItems['teammateThrone']!['position']).distance > 50) {
       
       setState(() {
         _moveTeammateToThrone();
@@ -912,9 +919,6 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
       characterModel.updateAction('interacting with board');
     }
 
-    // Create a unique key for the QuestBoard
-    final questBoardKey = GlobalKey<_QuestBoardState>();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -922,7 +926,15 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
         content: SizedBox(
           width: MediaQuery.of(context).size.width * 0.8,
           height: MediaQuery.of(context).size.height * 0.7,
-          child: QuestBoard(key: questBoardKey),
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              // Create a QuestBoard widget with current game state and summoned characters
+              return QuestBoard(
+                gameState: _gameState,
+                summonedCharacters: _summonedCharacters,
+              );
+            },
+          ),
         ),
         actions: [
           TextButton(
@@ -942,16 +954,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
           ),
         ],
       ),
-    ).then((_) {
-      // Update quest board with game state after dialog is shown
-      Future.microtask(() {
-        if (questBoardKey.currentState != null) {
-          questBoardKey.currentState!._gameState = _gameState;
-          questBoardKey.currentState!._summonedCharacters = _summonedCharacters;
-          questBoardKey.currentState!.setState(() {});
-        }
-      });
-    });
+    );
   }
 
   // Show the grimoire popup
@@ -1045,24 +1048,24 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
               children: [
                 // My Quests subtab
                 ListView(
-                  children: [
+                  children: const [
                     ListTile(
-                      title: const Text('Complete tutorial'),
-                      subtitle: const Text('Learn the basics of the guild system'),
-                      leading: const Icon(Icons.star, color: Colors.amber),
-                      trailing: const Text('Active'),
+                      title: Text('Complete tutorial'),
+                      subtitle: Text('Learn the basics of the guild system'),
+                      leading: Icon(Icons.star, color: Colors.amber),
+                      trailing: Text('Active'),
                     ),
                     ListTile(
-                      title: const Text('Recruit a teammate'),
-                      subtitle: const Text('Find someone to join your guild'),
-                      leading: const Icon(Icons.people, color: Colors.blue),
-                      trailing: const Text('Complete'),
+                      title: Text('Recruit a teammate'),
+                      subtitle: Text('Find someone to join your guild'),
+                      leading: Icon(Icons.people, color: Colors.blue),
+                      trailing: Text('Complete'),
                     ),
                     ListTile(
-                      title: const Text('Craft a potion'),
-                      subtitle: const Text('Use the alchemy table to make your first item'),
-                      leading: const Icon(Icons.science, color: Colors.green),
-                      trailing: const Text('Pending'),
+                      title: Text('Craft a potion'),
+                      subtitle: Text('Use the alchemy table to make your first item'),
+                      leading: Icon(Icons.science, color: Colors.green),
+                      trailing: Text('Pending'),
                     ),
                   ],
                 ),
@@ -1682,7 +1685,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                 
                 // Calculate position in a semicircle on the right side of the character
                 final double angle = (pi / 4) + (index * (pi / 2) / (_quickCastMagic.length - 1));
-                final double radius = 60.0;
+                const double radius = 60.0;
                 final double xOffset = cos(angle) * radius;
                 final double yOffset = sin(angle) * radius;
                 

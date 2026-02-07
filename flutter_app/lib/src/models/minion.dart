@@ -46,10 +46,10 @@ class Minion {
     this.assignedQuest,
     MinionAnimation? animation,
   }) : 
-    this.skills = skills ?? [],
-    this.position = position ?? Position(x: 0, y: 0),
-    this.state = state ?? MinionState.idle,
-    this.animation = animation ?? MinionAnimation();
+    skills = skills ?? [],
+    position = position ?? const Position(x: 0, y: 0),
+    state = state ?? MinionState.idle,
+    animation = animation ?? MinionAnimation();
   
   /// Set the minion's state
   void setState(MinionState newState) {

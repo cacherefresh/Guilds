@@ -112,7 +112,7 @@ class _CharacterWidgetState extends State<CharacterWidget> {
           // Only show state text in no-animation mode
           if (!animationSettings.animationsEnabled)
             Container(
-              padding: EdgeInsets.all(4),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(4),
@@ -122,12 +122,12 @@ class _CharacterWidgetState extends State<CharacterWidget> {
                   // State label
                   Text(
                     _getStateText(widget.character.state),
-                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
                   ),
                   // Animation name
                   Text(
                     'Animation: ${widget.character.animation.currentAnimationName}',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
                   ),
                 ],
               ),

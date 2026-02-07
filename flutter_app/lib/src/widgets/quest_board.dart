@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../models/character_model.dart';
 
 class QuestBoard extends StatefulWidget {
-  const QuestBoard({Key? key}) : super(key: key);
+  final Map<String, dynamic>? gameState;
+  final List<Map<String, dynamic>> summonedCharacters;
+
+  const QuestBoard({
+    Key? key,
+    this.gameState,
+    this.summonedCharacters = const [],
+  }) : super(key: key);
 
   @override
-  State<QuestBoard> createState() => _QuestBoardState();
+  QuestBoardState createState() => QuestBoardState();
 }
 
-class _QuestBoardState extends State<QuestBoard> {
+class QuestBoardState extends State<QuestBoard> {
   // Controller for adding new quests
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -33,11 +38,11 @@ class _QuestBoardState extends State<QuestBoard> {
     'Other',
   ];
 
-  // External reference to _gameState - set by parent
-  Map<String, dynamic>? _gameState;
+  // Get game state from widget
+  Map<String, dynamic>? get _gameState => widget.gameState;
   
-  // External reference to summoned characters - set by parent
-  List<Map<String, dynamic>> _summonedCharacters = [];
+  // Get summoned characters from widget
+  List<Map<String, dynamic>> get _summonedCharacters => widget.summonedCharacters;
 
   // Get quests from game state
   List<Map<String, dynamic>> get _quests {
@@ -52,6 +57,10 @@ class _QuestBoardState extends State<QuestBoard> {
   set _quests(List<Map<String, dynamic>> quests) {
     if (_gameState != null) {
       _gameState!['quests'] = quests;
+      // Notify parent of state change
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -68,6 +77,10 @@ class _QuestBoardState extends State<QuestBoard> {
   set _adventures(List<Map<String, dynamic>> adventures) {
     if (_gameState != null) {
       _gameState!['adventures'] = adventures;
+      // Notify parent of state change
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -78,7 +91,7 @@ class _QuestBoardState extends State<QuestBoard> {
     }
     
     return _quests.where((quest) => 
-      quest['adventureId'] == _filterAdventureId
+      quest['adventureId'] as String == _filterAdventureId
     ).toList();
   }
 
@@ -90,8 +103,8 @@ class _QuestBoardState extends State<QuestBoard> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_adventures.isNotEmpty && _selectedAdventureId == null) {
         setState(() {
-          _selectedAdventureId = _adventures.first['id'];
-          _filterAdventureId = _adventures.first['id'];
+          _selectedAdventureId = _adventures.first['id'] as String;
+          _filterAdventureId = _adventures.first['id'] as String;
         });
       }
     });
@@ -173,8 +186,8 @@ class _QuestBoardState extends State<QuestBoard> {
       _adventureDescController.clear();
       
       // Select the newly created adventure
-      _selectedAdventureId = newAdventure['id'];
-      _filterAdventureId = newAdventure['id'];
+      _selectedAdventureId = newAdventure['id'] as String;
+      _filterAdventureId = newAdventure['id'] as String;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -192,7 +205,7 @@ class _QuestBoardState extends State<QuestBoard> {
   void _updateQuestStatus(String questId, String newStatus) {
     setState(() {
       final questList = _quests;
-      final questIndex = questList.indexWhere((q) => q['id'] == questId);
+      final questIndex = questList.indexWhere((q) => q['id'] as String == questId);
       if (questIndex >= 0) {
         questList[questIndex]['status'] = newStatus;
         _quests = questList;
@@ -204,7 +217,7 @@ class _QuestBoardState extends State<QuestBoard> {
   void _deleteQuest(String questId) {
     setState(() {
       final questList = _quests;
-      questList.removeWhere((q) => q['id'] == questId);
+      questList.removeWhere((q) => q['id'] as String == questId);
       _quests = questList;
     });
 
@@ -244,13 +257,13 @@ class _QuestBoardState extends State<QuestBoard> {
                 questList.removeWhere((q) => q['adventureId'] == adventureId);
                 _quests = questList;
                 
-                // Reset filters
+                // Reset filters with explicit string casting when needed
                 if (_filterAdventureId == adventureId) {
-                  _filterAdventureId = _adventures.isNotEmpty ? _adventures.first['id'] : null;
+                  _filterAdventureId = _adventures.isNotEmpty ? _adventures.first['id'] as String : null;
                 }
                 
                 if (_selectedAdventureId == adventureId) {
-                  _selectedAdventureId = _adventures.isNotEmpty ? _adventures.first['id'] : null;
+                  _selectedAdventureId = _adventures.isNotEmpty ? _adventures.first['id'] as String : null;
                 }
               });
               
@@ -275,12 +288,21 @@ class _QuestBoardState extends State<QuestBoard> {
   void _assignQuestToSummon(String questId, String summonName) {
     setState(() {
       final questList = _quests;
-      final questIndex = questList.indexWhere((q) => q['id'] == questId);
+      final questIndex = questList.indexWhere((q) => q['id'] as String == questId);
       if (questIndex >= 0) {
         questList[questIndex]['assignedTo'] = summonName;
         _quests = questList;
       }
     });
+
+    // Update summon's quests list
+    final summonIndex = _summonedCharacters.indexWhere((s) => s['name'] == summonName);
+    if (summonIndex >= 0) {
+      final quest = _quests.firstWhere((q) => q['id'] == questId);
+      if (!_summonedCharacters[summonIndex]['quests'].contains(questId)) {
+        _summonedCharacters[summonIndex]['quests'].add(questId);
+      }
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -414,8 +436,8 @@ class _QuestBoardState extends State<QuestBoard> {
                         child: Text('All Adventures'),
                       ),
                       ..._adventures.map((adventure) => DropdownMenuItem<String>(
-                        value: adventure['id'],
-                        child: Text(adventure['name']),
+                        value: adventure['id'] as String,
+                        child: Text(adventure['name'] as String),
                       )),
                     ],
                     onChanged: (value) {
@@ -454,14 +476,14 @@ class _QuestBoardState extends State<QuestBoard> {
                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: ExpansionTile(
                         title: Text(quest['title'] as String),
-                        subtitle: Text('${quest['category']} - ${quest['status']} (${adventure['name']})'),
+                        subtitle: Text('${quest['category'] as String} - ${quest['status'] as String} (${adventure['name'] as String})'),
                         leading: CircleAvatar(
                           backgroundColor: statusColor,
                           child: const Icon(Icons.assignment, color: Colors.white),
                         ),
                         trailing: quest['assignedTo'] != null
                             ? Chip(
-                                label: Text('Assigned to: ${quest['assignedTo']}'),
+                                label: Text('Assigned to: ${quest['assignedTo'] as String}'),
                                 backgroundColor: Colors.purple.withOpacity(0.2),
                               )
                             : null,
@@ -559,7 +581,7 @@ class _QuestBoardState extends State<QuestBoard> {
 
   // Build buttons for changing quest status
   Widget _buildStatusButton(String status, Map<String, dynamic> quest, Color currentColor) {
-    final isCurrentStatus = quest['status'] == status;
+    final isCurrentStatus = quest['status'] as String == status;
     final Color buttonColor = _getStatusColor(status);
     
     return ElevatedButton(
@@ -671,8 +693,8 @@ class _QuestBoardState extends State<QuestBoard> {
                   value: _selectedAdventureId,
                   items: _adventures.map((adventure) {
                     return DropdownMenuItem<String>(
-                      value: adventure['id'],
-                      child: Text(adventure['name']),
+                      value: adventure['id'] as String,
+                      child: Text(adventure['name'] as String),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -743,22 +765,26 @@ class _QuestBoardState extends State<QuestBoard> {
                   itemCount: _adventures.length,
                   itemBuilder: (context, index) {
                     final adventure = _adventures[index];
-                    final questCount = _quests.where((q) => q['adventureId'] == adventure['id']).length;
+                    final adventureId = adventure['id'] as String;
+                    final questCount = _quests.where((q) => 
+                      q['adventureId'] as String == adventureId
+                    ).length;
                     final completedCount = _quests.where(
-                      (q) => q['adventureId'] == adventure['id'] && q['status'] == 'Complete'
+                      (q) => q['adventureId'] as String == adventureId && 
+                             q['status'] as String == 'Complete'
                     ).length;
                     
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: ListTile(
-                        title: Text(adventure['name']),
+                        title: Text(adventure['name'] as String),
                         subtitle: Text(
-                          '${adventure['description']}\nQuests: $completedCount/$questCount complete'
+                          '${adventure['description'] as String}\nQuests: $completedCount/$questCount complete'
                         ),
                         leading: CircleAvatar(
                           backgroundColor: Colors.deepPurple,
                           child: Text(
-                            adventure['name'].substring(0, 1).toUpperCase(),
+                            (adventure['name'] as String).substring(0, 1).toUpperCase(),
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
@@ -770,7 +796,7 @@ class _QuestBoardState extends State<QuestBoard> {
                               tooltip: 'View Quests',
                               onPressed: () {
                                 setState(() {
-                                  _filterAdventureId = adventure['id'];
+                                  _filterAdventureId = adventure['id'] as String;
                                 });
                                 // Switch to quests tab
                                 DefaultTabController.of(context).animateTo(0);
@@ -779,7 +805,7 @@ class _QuestBoardState extends State<QuestBoard> {
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               tooltip: 'Delete Adventure',
-                              onPressed: () => _deleteAdventure(adventure['id']),
+                              onPressed: () => _deleteAdventure(adventure['id'] as String),
                             ),
                           ],
                         ),

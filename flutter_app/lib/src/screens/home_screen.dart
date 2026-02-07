@@ -4,6 +4,7 @@ import '../models/character_model.dart';
 import '../widgets/simple_character_view.dart';
 import '../widgets/control_panel.dart';
 import '../widgets/quest_board.dart';
+import '../widgets/top_banner.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -13,16 +14,38 @@ class HomeScreen extends StatelessWidget {
     final characterModel = Provider.of<CharacterModel>(context);
     
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${characterModel.guildName} - Guild Room'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // Navigate to settings
-            },
-          ),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(120 + kToolbarHeight),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const TopBanner(),
+            Container(
+              height: kToolbarHeight,
+              color: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        '${characterModel.guildName} - Guild Room',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.settings, color: Colors.white),
+                    onPressed: () {
+                      // Navigate to settings
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       body: Row(
         children: [
@@ -30,7 +53,7 @@ class HomeScreen extends StatelessWidget {
           Expanded(
             flex: 7,
             child: Container(
-              color: Theme.of(context).colorScheme.background,
+              color: Theme.of(context).colorScheme.surface,
               child: const SimpleCharacterView(),
             ),
           ),
@@ -93,8 +116,8 @@ class HomeScreen extends StatelessWidget {
             builder: (_) => const AddQuestDialog(),
           );
         },
-        child: const Icon(Icons.add),
         tooltip: 'Add New Quest',
+        child: const Icon(Icons.add),
       ),
     );
   }

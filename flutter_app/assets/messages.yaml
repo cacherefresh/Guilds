@@ -1,0 +1,21 @@
+messages:
+  - id: 1
+    message_id: msgId_topbanner_title
+    language: EN
+    text: "Peace On Earth \u{1f54a}  P.O.E. — a nod to Edgar Allen as I'm creating it through solutions (not Utopian) in Baltimore. =^_~="
+
+  - id: 2
+    message_id: msgId_topbanner_title
+    language: FR
+    text: "Paix sur Terre — P.O.E. — un clin d'œil à Edgar Allen, créé par des solutions (pas utopiques) à Baltimore."
+
+  - id: 3
+    message_id: msgId_topbanner_mission
+    language: EN
+    text: |
+      In Honor of Robert Julious Coffman, The Allied Forces, The Red Army and the Chinese who covered for American men, For the Code Talkers, and Everyone on this planet. Save a life. I am a lightworker. I bring Knowledge. Statue of Liberty and the italian paintings. Seek Truth. In the cyber world we have a saying - Trust but Verify. The Great Awakening. I'm DJ YuVi... (full mission text stored separately in top_banner_mission_statement.txt)
+
+  - id: 4
+    message_id: msgId_topbanner_mission
+    language: FR
+    text: "(French translation placeholder)"

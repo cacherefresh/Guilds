@@ -8,7 +8,7 @@ class AnimationSettings extends ChangeNotifier {
   bool _animationsEnabled = false;
   
   // Duration for state change flicker effect
-  final Duration flickerDuration = Duration(milliseconds: 1000);
+  static Duration flickerDuration = Duration(milliseconds: 1000);
   
   // Get animation state
   bool get animationsEnabled => _animationsEnabled;

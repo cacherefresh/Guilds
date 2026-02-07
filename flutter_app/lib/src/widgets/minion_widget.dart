@@ -112,7 +112,7 @@ class _MinionWidgetState extends State<MinionWidget> {
           // Only show state text in no-animation mode
           if (!animationSettings.animationsEnabled)
             Container(
-              padding: EdgeInsets.all(4),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(4),
@@ -122,12 +122,12 @@ class _MinionWidgetState extends State<MinionWidget> {
                   // State label
                   Text(
                     _getStateText(widget.minion.state),
-                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
                   ),
                   // Animation name
                   Text(
                     'Animation: ${widget.minion.animation.currentAnimationName}',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
                   ),
                 ],
               ),
