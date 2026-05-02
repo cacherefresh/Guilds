@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+    <changeSet id="010" author="guild-developer">
+        <comment>Create language_packs table</comment>
+        <createTable tableName="language_packs">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="language_code" type="varchar(10)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="language_name" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_current" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- Real-world terminology -->
+            <column name="real_quest_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_quest_reward_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_epic_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_adventure_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_character_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_guild_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_skill_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_design_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_proof_of_concept_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_implement_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_bug_check_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="real_subdivide_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- In-game terminology -->
+            <column name="game_quest_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_quest_reward_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_epic_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_adventure_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_character_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_guild_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_skill_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_design_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_proof_of_concept_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_implement_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_bug_check_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_subdivide_term" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <addDefaultValue tableName="language_packs" columnName="id" defaultValueComputed="uuid_generate_v4()"/>
+    </changeSet>
+
+    <changeSet id="011" author="guild-developer">
+        <comment>Insert default English language pack</comment>
+        <insert tableName="language_packs">
+            <column name="language_code">eng</column>
+            <column name="language_name">English</column>
+            <column name="is_current">true</column>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+            
+            <!-- Real-world terminology -->
+            <column name="real_quest_term">Story</column>
+            <column name="real_quest_reward_term">Points</column>
+            <column name="real_epic_term">Feature</column>
+            <column name="real_adventure_term">Project</column>
+            <column name="real_character_term">User</column>
+            <column name="real_guild_term">Team</column>
+            <column name="real_skill_term">Skill</column>
+            <column name="real_design_term">Design</column>
+            <column name="real_proof_of_concept_term">Proof of Concept</column>
+            <column name="real_implement_term">Implementation</column>
+            <column name="real_bug_check_term">Bug Fix</column>
+            <column name="real_subdivide_term">Subdivision</column>
+            
+            <!-- In-game terminology -->
+            <column name="game_quest_term">Quest</column>
+            <column name="game_quest_reward_term">Reward</column>
+            <column name="game_epic_term">Epic</column>
+            <column name="game_adventure_term">Adventure</column>
+            <column name="game_character_term">Character</column>
+            <column name="game_guild_term">Guild</column>
+            <column name="game_skill_term">Skill</column>
+            <column name="game_design_term">Planning</column>
+            <column name="game_proof_of_concept_term">Scouting</column>
+            <column name="game_implement_term">Crafting</column>
+            <column name="game_bug_check_term">Hunting</column>
+            <column name="game_subdivide_term">Splitting</column>
+        </insert>
+    </changeSet>
+
+    <changeSet id="012" author="guild-developer">
+        <comment>Update quests table with new fields</comment>
+        <addColumn tableName="quests">
+            <column name="skills_required" type="jsonb">
+                <constraints nullable="true"/>
+            </column>
+            <column name="quest_type" type="varchar(50)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="creator_character_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="requestor_character_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        
+        <createIndex tableName="quests" indexName="idx_quests_creator">
+            <column name="creator_character_id"/>
+        </createIndex>
+        <createIndex tableName="quests" indexName="idx_quests_requestor">
+            <column name="requestor_character_id"/>
+        </createIndex>
+        <createIndex tableName="quests" indexName="idx_quests_type">
+            <column name="quest_type"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="013" author="guild-developer">
+        <comment>Update adventures table with reward summary fields</comment>
+        <addColumn tableName="adventures">
+            <column name="total_xp_reward" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_gold_reward" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="outline" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="components" type="jsonb">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog> 

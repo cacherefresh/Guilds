@@ -1,0 +1,3 @@
+id,name,description,town_id,leader_id,reputation,focus_areas,created_at,updated_at
+1,Coders Guild,A guild focused on coding challenges,1,2,100,coding&COMMA problem solving,2023-01-01T12:00:00Z,2023-01-01T12:00:00Z
+2,Design Masters,Guild specializing in design tasks,1,3,75,design&COMMA UX,2023-01-01T12:00:00Z,2023-01-01T12:00:00Z 

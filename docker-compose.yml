@@ -1,0 +1,148 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: guilds_postgres
+    env_file:
+      - ./SECRETS/api/database.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  liquibase:
+    image: liquibase/liquibase:4.20
+    container_name: guilds_liquibase
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/quest-service/liquibase:/liquibase/changelog/quest-service
+      - ./lib:/liquibase/lib
+    command: --changelog-file=quest-service/master.xml --url=jdbc:postgresql://postgres:5432/guilds --username=postgres --password=postgres update
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: guilds_api_gateway
+    env_file:
+      - ./SECRETS/services/api-gateway/database.env
+    environment:
+      SECRETS_PATH: /secrets
+      STORAGE_MODE: ${STORAGE_MODE:-postgres}
+      GAME_ID: ${GAME_ID:-}
+      GAME_SAVE_PATH: /app/GameSave
+      QUEST_SERVICE_URL: http://quest-service:8081
+      CHARACTER_SERVICE_URL: http://character-service:8082
+      GUILD_SERVICE_URL: http://guild-service:8083
+      REWARD_SERVICE_URL: http://reward-service:8084
+    volumes:
+      - ./SECRETS/services/api-gateway:/secrets
+      - ./GameSave:/app/GameSave
+      - ./GameSaveTemplate:/app/GameSaveTemplate
+    ports:
+      - "8080:8080"
+    depends_on:
+      - liquibase
+      - quest-service
+      - character-service
+      - guild-service
+      - reward-service
+
+  quest-service:
+    build:
+      context: ./services/quest-service
+      dockerfile: Dockerfile
+    container_name: guilds_quest_service
+    env_file:
+      - ./SECRETS/services/quest-service/database.env
+    environment:
+      SECRETS_PATH: /secrets
+      STORAGE_MODE: ${STORAGE_MODE:-postgres}
+      GAME_ID: ${GAME_ID:-}
+      GAME_SAVE_PATH: /app/GameSave
+    volumes:
+      - ./SECRETS/services/quest-service:/secrets
+      - ./GameSave:/app/GameSave
+      - ./GameSaveTemplate:/app/GameSaveTemplate
+    ports:
+      - "8081:8081"
+    depends_on:
+      - liquibase
+
+  character-service:
+    build:
+      context: ./services/character-service
+      dockerfile: Dockerfile
+    container_name: guilds_character_service
+    env_file:
+      - ./SECRETS/services/character-service/database.env
+    environment:
+      SECRETS_PATH: /secrets
+      STORAGE_MODE: ${STORAGE_MODE:-postgres}
+      GAME_ID: ${GAME_ID:-}
+      GAME_SAVE_PATH: /app/GameSave
+    volumes:
+      - ./SECRETS/services/character-service:/secrets
+      - ./GameSave:/app/GameSave
+      - ./GameSaveTemplate:/app/GameSaveTemplate
+    ports:
+      - "8082:8082"
+    depends_on:
+      - liquibase
+
+  guild-service:
+    build:
+      context: ./services/guild-service
+      dockerfile: Dockerfile
+    container_name: guilds_guild_service
+    env_file:
+      - ./SECRETS/services/guild-service/database.env
+    environment:
+      SECRETS_PATH: /secrets
+      STORAGE_MODE: ${STORAGE_MODE:-postgres}
+      GAME_ID: ${GAME_ID:-}
+      GAME_SAVE_PATH: /app/GameSave
+    volumes:
+      - ./SECRETS/services/guild-service:/secrets
+      - ./GameSave:/app/GameSave
+      - ./GameSaveTemplate:/app/GameSaveTemplate
+    ports:
+      - "8083:8083"
+    depends_on:
+      - liquibase
+
+  reward-service:
+    build:
+      context: ./services/reward-service
+      dockerfile: Dockerfile
+    container_name: guilds_reward_service
+    env_file:
+      - ./SECRETS/services/reward-service/database.env
+    environment:
+      SECRETS_PATH: /secrets
+      STORAGE_MODE: ${STORAGE_MODE:-postgres}
+      GAME_ID: ${GAME_ID:-}
+      GAME_SAVE_PATH: /app/GameSave
+    volumes:
+      - ./SECRETS/services/reward-service:/secrets
+      - ./GameSave:/app/GameSave
+      - ./GameSaveTemplate:/app/GameSaveTemplate
+    ports:
+      - "8084:8084"
+    depends_on:
+      - liquibase
+
+volumes:
+  postgres_data:
+  quest_cache:
+  guild_cache:
+  character_cache:
+  reward_cache: 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+    <include file="changelogs/001-initial-schema.xml" relativeToChangelogFile="true"/>
+    <include file="changelogs/002-quest-relationships.xml" relativeToChangelogFile="true"/>
+    <include file="changelogs/003-language-packs.xml" relativeToChangelogFile="true"/>
+    <include file="changelogs/004-language-packs.xml" relativeToChangelogFile="true"/>
+    
+</databaseChangeLog> 

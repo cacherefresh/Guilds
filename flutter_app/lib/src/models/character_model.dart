@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'minion_model.dart';
 
-class CharacterModel extends ChangeNotifier {
+class CharacterModel with ChangeNotifier {
   String _name = "Default Character";
   String _guildName = "Default Guild";
-  List<String> _interests = ["Music", "Programming", "Bringing AI to Life"];
-  List<String> _skills = [];
-  List<String> _magicAbilities = ["Shadow Clone", "Shadow Minion"];
-  List<MinionModel> _minions = [];
+  final List<String> _interests = ["Music", "Programming", "Bringing AI to Life"];
+  final List<String> _skills = [];
+  final List<String> _magicAbilities = ["Shadow Clone", "Shadow Minion", "Music Magic"];
+  final List<MinionModel> _minions = [];
   
   // Position in the room
   double _positionX = 0.0;
@@ -16,6 +16,11 @@ class CharacterModel extends ChangeNotifier {
   
   // Current action
   String _currentAction = "idle"; // idle, walking, thinking, pointing
+  
+  // Character properties
+  final Map<String, String> _properties = {
+    'afterimage': 'off'
+  };
   
   // Getters
   String get name => _name;
@@ -81,6 +86,12 @@ class CharacterModel extends ChangeNotifier {
     notifyListeners();
   }
   
+  // Method to play music using magic
+  void playMusic() {
+    // Logic for music playing will be handled in the view
+    notifyListeners();
+  }
+  
   // Method to update position
   void updatePosition(double x, double y, double z) {
     _positionX = x;
@@ -113,5 +124,16 @@ class CharacterModel extends ChangeNotifier {
   void pointAt(double x, double y, double z) {
     updateAction("pointing");
     // Logic for pointing at a specific location
+  }
+  
+  // Get a character property
+  String getProperty(String key) {
+    return _properties[key] ?? '';
+  }
+  
+  // Set a character property
+  void setProperty(String key, String value) {
+    _properties[key] = value;
+    notifyListeners();
   }
 } 

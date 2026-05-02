@@ -1,0 +1,4 @@
+id,title,description,adventure_id,status,order_in_adventure,created_at,updated_at
+1,Introduction to Programming,Learn the basics of programming,1,ACTIVE,1,2023-01-01T12:00:00Z,2023-01-01T12:00:00Z
+2,Web Development Basics,Create your first web application,1,ACTIVE,2,2023-01-01T12:00:00Z,2023-01-01T12:00:00Z
+3,UI Design Fundamentals,Learn the basics of UI design,2,ACTIVE,1,2023-01-01T12:00:00Z,2023-01-01T12:00:00Z 

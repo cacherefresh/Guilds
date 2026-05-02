@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+
+    <changeSet id="1" author="guilds_app">
+        <comment>Create guild_app schema and initial tables</comment>
+        
+        <!-- Create schema -->
+        <sql>CREATE SCHEMA IF NOT EXISTS guild_app;</sql>
+        
+        <!-- Characters table -->
+        <createTable tableName="characters" schemaName="guild_app">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="level" type="integer" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="xp" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active_guild_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="team_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="properties" type="jsonb" defaultValue="'{}'::jsonb">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Skills table -->
+        <createTable tableName="skills" schemaName="guild_app">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="level" type="integer" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Character Skills junction table -->
+        <createTable tableName="character_skills" schemaName="guild_app">
+            <column name="character_id" type="uuid">
+                <constraints nullable="false" 
+                             foreignKeyName="fk_character_skills_character"
+                             references="guild_app.characters(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="skill_id" type="uuid">
+                <constraints nullable="false" 
+                             foreignKeyName="fk_character_skills_skill"
+                             references="guild_app.skills(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="level" type="integer" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="character_skills" 
+                      columnNames="character_id, skill_id" 
+                      constraintName="pk_character_skills"
+                      schemaName="guild_app"/>
+
+        <!-- Quests table -->
+        <createTable tableName="quests" schemaName="guild_app">
+            <column name="id" type="uuid" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="difficulty" type="integer" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reward" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="xp_reward" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="gold_reward" type="integer" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(50)" defaultValue="AVAILABLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="assigned_character_id" type="uuid">
+                <constraints nullable="true" 
+                             foreignKeyName="fk_quest_assigned_character"
+                             references="guild_app.characters(id)"/>
+            </column>
+            <column name="properties" type="jsonb" defaultValue="'{}'::jsonb">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Quest Skills junction table -->
+        <createTable tableName="quest_skills" schemaName="guild_app">
+            <column name="quest_id" type="uuid">
+                <constraints nullable="false" 
+                             foreignKeyName="fk_quest_skills_quest"
+                             references="guild_app.quests(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="skill_id" type="uuid">
+                <constraints nullable="false" 
+                             foreignKeyName="fk_quest_skills_skill"
+                             references="guild_app.skills(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="min_level" type="integer" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="quest_skills" 
+                      columnNames="quest_id, skill_id" 
+                      constraintName="pk_quest_skills"
+                      schemaName="guild_app"/>
+
+        <!-- Create indexes -->
+        <createIndex tableName="characters" 
+                    indexName="idx_characters_name" 
+                    schemaName="guild_app">
+            <column name="name"/>
+        </createIndex>
+
+        <createIndex tableName="characters" 
+                    indexName="idx_characters_type" 
+                    schemaName="guild_app">
+            <column name="type"/>
+        </createIndex>
+
+        <createIndex tableName="quests" 
+                    indexName="idx_quests_status" 
+                    schemaName="guild_app">
+            <column name="status"/>
+        </createIndex>
+
+        <createIndex tableName="quests" 
+                    indexName="idx_quests_difficulty" 
+                    schemaName="guild_app">
+            <column name="difficulty"/>
+        </createIndex>
+
+        <createIndex tableName="skills" 
+                    indexName="idx_skills_category" 
+                    schemaName="guild_app">
+            <column name="category"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog> 

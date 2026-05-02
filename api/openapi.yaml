@@ -1,0 +1,607 @@
+openapi: 3.0.3
+info:
+  title: Guild Quests API
+  description: API for managing quests, characters, and skills in the guild system
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Development server
+paths:
+  /quests:
+    get:
+      summary: Get all quests
+      description: Retrieve all quests with optional filtering
+      operationId: getQuests
+      parameters:
+        - name: skillIds
+          in: query
+          description: Filter quests by required skills (comma-separated skill IDs)
+          required: false
+          schema:
+            type: string
+        - name: characterIds
+          in: query
+          description: Filter quests available for specific characters based on their skills
+          required: false
+          schema:
+            type: string
+        - name: exactMatch
+          in: query
+          description: When true, only return quests that exactly match the provided skills
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          description: Maximum number of quests to return
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: Number of quests to skip for pagination
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Quest'
+                  total:
+                    type: integer
+                  offset:
+                    type: integer
+                  limit:
+                    type: integer
+        '400':
+          description: Invalid input
+    post:
+      summary: Create a new quest
+      description: Add a new quest to the system
+      operationId: createQuest
+      requestBody:
+        description: Quest object that needs to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestCreate'
+      responses:
+        '201':
+          description: Quest created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '400':
+          description: Invalid input
+  
+  /quests/{questId}:
+    get:
+      summary: Get quest by ID
+      description: Retrieve a specific quest by ID
+      operationId: getQuestById
+      parameters:
+        - name: questId
+          in: path
+          description: ID of quest to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '404':
+          description: Quest not found
+    put:
+      summary: Update an existing quest
+      description: Update details of an existing quest
+      operationId: updateQuest
+      parameters:
+        - name: questId
+          in: path
+          description: ID of quest to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Updated quest object
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestUpdate'
+      responses:
+        '200':
+          description: Quest updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '400':
+          description: Invalid input
+        '404':
+          description: Quest not found
+    delete:
+      summary: Delete a quest
+      description: Delete a quest from the system
+      operationId: deleteQuest
+      parameters:
+        - name: questId
+          in: path
+          description: ID of quest to delete
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Quest deleted successfully
+        '404':
+          description: Quest not found
+  
+  /quests/available:
+    get:
+      summary: Get quests available for a character
+      description: Find quests that are available for a character based on their skills
+      operationId: getAvailableQuests
+      parameters:
+        - name: characterId
+          in: query
+          description: ID of the character to check available quests for
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeTeam
+          in: query
+          description: Include team skills in the query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Quest'
+                  skillsCovered:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Skill'
+        '404':
+          description: Character not found
+
+  /skills:
+    get:
+      summary: Get all skills
+      description: Retrieve all available skills
+      operationId: getSkills
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
+    post:
+      summary: Create a new skill
+      description: Add a new skill to the system
+      operationId: createSkill
+      requestBody:
+        description: Skill object that needs to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillCreate'
+      responses:
+        '201':
+          description: Skill created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '400':
+          description: Invalid input
+
+  /characters:
+    get:
+      summary: Get all characters
+      description: Retrieve all characters
+      operationId: getCharacters
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Character'
+    post:
+      summary: Create a new character
+      description: Add a new character to the system
+      operationId: createCharacter
+      requestBody:
+        description: Character object that needs to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterCreate'
+      responses:
+        '201':
+          description: Character created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          description: Invalid input
+
+  /characters/{characterId}:
+    get:
+      summary: Get character by ID
+      description: Retrieve a specific character by ID
+      operationId: getCharacterById
+      parameters:
+        - name: characterId
+          in: path
+          description: ID of character to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '404':
+          description: Character not found
+    put:
+      summary: Update character details
+      description: Update an existing character's details
+      operationId: updateCharacter
+      parameters:
+        - name: characterId
+          in: path
+          description: ID of character to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Updated character object
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterUpdate'
+      responses:
+        '200':
+          description: Character updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          description: Invalid input
+        '404':
+          description: Character not found
+
+  /characters/{characterId}/skills:
+    get:
+      summary: Get character skills
+      description: Retrieve skills for a specific character
+      operationId: getCharacterSkills
+      parameters:
+        - name: characterId
+          in: path
+          description: ID of character
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
+        '404':
+          description: Character not found
+    post:
+      summary: Add skills to character
+      description: Add new skills to an existing character
+      operationId: addCharacterSkills
+      parameters:
+        - name: characterId
+          in: path
+          description: ID of character
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Skills to add to character
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                skillIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: Skills added successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
+        '400':
+          description: Invalid input
+        '404':
+          description: Character not found
+
+components:
+  schemas:
+    Quest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: integer
+          minimum: 1
+          maximum: 10
+        requiredSkills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+        reward:
+          type: string
+        xpReward:
+          type: integer
+        goldReward:
+          type: integer
+        status:
+          type: string
+          enum: [AVAILABLE, ASSIGNED, COMPLETED, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - description
+        - status
+        - createdAt
+        - updatedAt
+
+    QuestCreate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: integer
+          minimum: 1
+          maximum: 10
+        requiredSkillIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        reward:
+          type: string
+        xpReward:
+          type: integer
+        goldReward:
+          type: integer
+      required:
+        - title
+        - description
+        - requiredSkillIds
+
+    QuestUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: integer
+          minimum: 1
+          maximum: 10
+        requiredSkillIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        reward:
+          type: string
+        xpReward:
+          type: integer
+        goldReward:
+          type: integer
+        status:
+          type: string
+          enum: [AVAILABLE, ASSIGNED, COMPLETED, FAILED]
+
+    Skill:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [COMBAT, MAGIC, CRAFTING, SOCIAL, STEALTH, KNOWLEDGE]
+        level:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required:
+        - id
+        - name
+        - category
+
+    SkillCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [COMBAT, MAGIC, CRAFTING, SOCIAL, STEALTH, KNOWLEDGE]
+        level:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required:
+        - name
+        - category
+
+    Character:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [MAIN, TEAMMATE, SHADOW_CLONE, SHADOW_MINION]
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+        level:
+          type: integer
+        xp:
+          type: integer
+        guild:
+          type: string
+        teamId:
+          type: string
+          format: uuid
+          description: ID of the team this character belongs to
+        properties:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - type
+        - createdAt
+        - updatedAt
+
+    CharacterCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [MAIN, TEAMMATE, SHADOW_CLONE, SHADOW_MINION]
+        skillIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        level:
+          type: integer
+        xp:
+          type: integer
+        guild:
+          type: string
+        teamId:
+          type: string
+          format: uuid
+        properties:
+          type: object
+          additionalProperties: true
+      required:
+        - name
+        - type
+
+    CharacterUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        level:
+          type: integer
+        xp:
+          type: integer
+        guild:
+          type: string
+        teamId:
+          type: string
+          format: uuid
+        properties:
+          type: object
+          additionalProperties: true 

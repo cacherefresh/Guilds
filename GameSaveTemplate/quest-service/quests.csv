@@ -1,0 +1,4 @@
+id,title,description,difficulty,epic_id,quest_order,guild_id,contact_character_id,assigned_to_id,assigned_to_type,skills_required,quest_type,creator_character_id,requestor_character_id,status,created_at,updated_at
+1,First Quest,This is a sample quest with a comma&COMMA please escape it,EASY,1,1,,,,,coding&COMMA planning,DESIGN,,,AVAILABLE,2023-01-01T12:00:00Z,2023-01-01T12:00:00Z
+2,Second Quest,Another sample quest,MEDIUM,1,2,,,,,coding,IMPLEMENT,,,AVAILABLE,2023-01-02T12:00:00Z,2023-01-02T12:00:00Z
+3,Design Quest,Create a wireframe for a login screen,EASY,3,1,2,,,,design,DESIGN,,,AVAILABLE,2023-01-03T12:00:00Z,2023-01-03T12:00:00Z 

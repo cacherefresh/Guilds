@@ -1,0 +1,6 @@
+name,description,region,properties
+'Waterdeep','A bustling coastal city known for its commerce and adventuring opportunities','Sword Coast','{"population": 100000, "specialty": "commerce", "government": "council"}'
+'Neverwinter','A city rebuilt after volcanic disaster, known for its skilled craftsmen','Sword Coast','{"population": 50000, "specialty": "crafting", "government": "lord"}'
+'Baldur''s Gate','A fortified city with a strong military presence and trade connections','Sword Coast','{"population": 80000, "specialty": "trade", "government": "council"}'
+'Silverymoon','A magical city with a large population of spellcasters and magical institutions','Silver Marches','{"population": 40000, "specialty": "magic", "government": "high mage"}'
+'Mirabar','A mining city rich in precious metals and gems','Silver Marches','{"population": 35000, "specialty": "mining", "government": "marchion"}' 
