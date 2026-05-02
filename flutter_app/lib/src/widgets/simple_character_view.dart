@@ -1385,11 +1385,12 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                   color: const Color(0xFF6A0DAD),
                   width: 3,
                 ),
-                image: const DecorationImage(
-                  image: AssetImage('assets/images/guild_hall_bg.png'),
-                  fit: BoxFit.cover,
-                  opacity: 0.4,
-                ),
+ //for now leaving this out. it was only a placeholder stolen from my gmail profile pic. Rob C.
+             //   image: const DecorationImage(
+             //     image: AssetImage('assets/images/guild_hall_bg.png'),
+             //     fit: BoxFit.cover,
+             //     opacity: 0.4,
+             //   ),
               ),
               width: 1000,
               height: 800,
