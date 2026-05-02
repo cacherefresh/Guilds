@@ -45,7 +45,7 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
 
-      - run: flutter build web --base-href "${{ steps.pages.outputs.base_path }}/"
+      - run: flutter build web --base-href "${{ steps.pages.outputs.base_path }}/" --target lib/web_main.dart
         # because it's a mono repo structure... r.c.
         working-directory: ./flutter_app
         
