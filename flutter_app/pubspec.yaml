@@ -25,10 +25,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/models/
-    - assets/textures/
     - assets/images/
-    - assets/animations/
     - assets/top_banner_mission_statement.txt
     - assets/messages.yaml
     - assets/data_quests/

@@ -162,7 +162,7 @@ class QuestUpdate {
     if (reward != null) data['reward'] = reward;
     if (xpReward != null) data['xp_reward'] = xpReward;
     if (goldReward != null) data['gold_reward'] = goldReward;
-    if (status != null) data['status'] = status.name;
+    if (status != null) data['status'] = status!.name;
     
     return data;
   }

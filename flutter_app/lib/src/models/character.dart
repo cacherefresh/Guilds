@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'character_animation.dart';
 import 'enums/character_state.dart';
 import 'position.dart';
@@ -8,32 +7,6 @@ enum CharacterType {
   player,
   npc,
   monster
-}
-
-extension CharacterTypeExtension on CharacterType {
-  String get name {
-    switch (this) {
-      case CharacterType.player:
-        return 'PLAYER';
-      case CharacterType.npc:
-        return 'NPC';
-      case CharacterType.monster:
-        return 'MONSTER';
-    }
-  }
-  
-  static CharacterType fromString(String type) {
-    switch (type) {
-      case 'PLAYER':
-        return CharacterType.player;
-      case 'NPC':
-        return CharacterType.npc;
-      case 'MONSTER':
-        return CharacterType.monster;
-      default:
-        return CharacterType.player;
-    }
-  }
 }
 
 /// Represents a character in the game
@@ -208,7 +181,7 @@ class CharacterUpdate {
     final Map<String, dynamic> data = {};
     
     if (name != null) data['name'] = name;
-    if (type != null) data['type'] = type.name;
+    if (type != null) data['type'] = type!.name;
     if (skillIds != null) data['skill_ids'] = skillIds;
     if (level != null) data['level'] = level;
     if (xp != null) data['xp'] = xp;
