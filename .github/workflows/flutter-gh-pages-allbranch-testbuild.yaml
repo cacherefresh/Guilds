@@ -6,7 +6,7 @@ name: CI Deploy Flutter MonoRepo App with nested Flutter Packages - by Rob aka Y
 on:
   # Triggers the workflow on push or pull request events but only for the "sanctuary" branch
   push:
-    branches: ["bugfix/get-githubactions-deploy-working"]
+    branches: ["*"]
   
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
