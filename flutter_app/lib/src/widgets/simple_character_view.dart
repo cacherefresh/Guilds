@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/character_model.dart';
 import '../widgets/quest_board.dart';
 import 'dart:math';
@@ -2043,8 +2044,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
             // When reached turntables
             if (i == steps) {
               characterModel.updateAction('using turntables');
-              // Show music selection dialog
-              _showMusicSelectionDialog();
+              _openDJMixerUrl();
             }
           });
         }
@@ -2052,6 +2052,13 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     }
   }
   
+  Future<void> _openDJMixerUrl() async {
+    final uri = Uri.parse('https://yuvi-rays-dvs.cacherefresh.io');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   // Show music selection dialog
   void _showMusicSelectionDialog() {
     final characterModel = Provider.of<CharacterModel>(context, listen: false);
