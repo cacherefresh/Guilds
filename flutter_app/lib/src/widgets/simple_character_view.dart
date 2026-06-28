@@ -71,6 +71,12 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
   // Summoned characters
   List<Map<String, dynamic>> _summonedCharacters = [];
   int _activeSummonIndex = -1; // -1 means no summon is active
+
+  // Arcane blast lightning animation state
+  String _lastMoveDirection = 'none';
+  DateTime _lastMoveTime = DateTime(2000);
+  int _boltIdCounter = 0;
+  List<Map<String, dynamic>> _activeBolts = [];
   
   // Magic abilities with their icons and casting state
   final List<Map<String, dynamic>> _quickCastMagic = [
@@ -893,9 +899,19 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
           0,
           _characterPosition.dy,
         );
+        // Track last move direction for arcane blast
+        if (event.logicalKey == LogicalKeyboardKey.keyW || event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _lastMoveDirection = 'up'; _lastMoveTime = DateTime.now();
+        } else if (event.logicalKey == LogicalKeyboardKey.keyA || event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          _lastMoveDirection = 'left'; _lastMoveTime = DateTime.now();
+        } else if (event.logicalKey == LogicalKeyboardKey.keyS || event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          _lastMoveDirection = 'down'; _lastMoveTime = DateTime.now();
+        } else if (event.logicalKey == LogicalKeyboardKey.keyD || event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          _lastMoveDirection = 'right'; _lastMoveTime = DateTime.now();
+        }
       }
     });
-    
+
     // Check for interaction with items
     Offset positionToCheck;
     if (_activeSummonIndex >= 0) {
@@ -1202,14 +1218,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
           leading: const Icon(Icons.flash_on, color: Colors.blue),
           onTap: () {
             Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Arcane energy bursts from your hands!'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-            
-            // Return focus to game area
+            _castArcaneLightning();
             _focusNode.requestFocus();
           },
         ),
@@ -1763,7 +1772,26 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
                   ),
                 );
               }).toList(),
-            
+
+            // Arcane blast lightning bolt overlays
+            ..._activeBolts.map((bolt) {
+              final phase = bolt['phase'] as int;
+              final pos = bolt['position'] as Offset;
+              final String symbol;
+              if (phase == 0) {
+                symbol = '☁';
+              } else if (phase == 1) {
+                symbol = '🌧';
+              } else {
+                symbol = '⚡';
+              }
+              return Positioned(
+                left: pos.dx - 15,
+                top: pos.dy - 15,
+                child: Text(symbol, style: const TextStyle(fontSize: 30)),
+              );
+            }).toList(),
+
             // Teammate character representation
             Positioned(
               left: _teammatePosition.dx - 25,
@@ -2052,6 +2080,96 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
     }
   }
   
+  void _castArcaneLightning() {
+    final bool noRecentMove =
+        DateTime.now().difference(_lastMoveTime).inMilliseconds > 2000;
+    final List<String> directions =
+        (noRecentMove || _lastMoveDirection == 'none')
+            ? ['up', 'down', 'left', 'right']
+            : [_lastMoveDirection];
+    for (final dir in directions) {
+      _spawnLightningBolt(dir);
+    }
+  }
+
+  void _spawnLightningBolt(String direction) {
+    final id = _boltIdCounter++;
+
+    // Capture position at cast time so the bolt stays fixed even if character moves
+    final Offset origin = _characterPosition;
+    final Offset startPos;
+    switch (direction) {
+      case 'left':
+        startPos = origin + const Offset(-70, 0);
+        break;
+      case 'right':
+        startPos = origin + const Offset(70, 0);
+        break;
+      case 'up':
+        startPos = origin + const Offset(0, -70);
+        break;
+      default: // 'down'
+        startPos = origin + const Offset(0, 70);
+    }
+
+    // Phase 0: ☁
+    setState(() {
+      _activeBolts.add({'id': id, 'phase': 0, 'position': startPos});
+    });
+
+    // Phase 1: 🌧
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+      final idx = _activeBolts.indexWhere((b) => b['id'] == id);
+      if (idx < 0) return;
+      setState(() => _activeBolts[idx]['phase'] = 1);
+    });
+
+    // Phase 2: ⚡ (stationary)
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      final idx = _activeBolts.indexWhere((b) => b['id'] == id);
+      if (idx < 0) return;
+      setState(() => _activeBolts[idx]['phase'] = 2);
+    });
+
+    // Phase 3: ⚡ starts moving
+    Future.delayed(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      _startBoltMovement(id, direction);
+    });
+  }
+
+  void _startBoltMovement(int id, String direction) {
+    const double moveAmount = 10.0;
+    const moveInterval = Duration(milliseconds: 80);
+
+    final Offset delta;
+    switch (direction) {
+      case 'left':  delta = const Offset(-moveAmount, 0); break;
+      case 'right': delta = const Offset(moveAmount, 0);  break;
+      case 'up':    delta = const Offset(0, -moveAmount); break;
+      default:      delta = const Offset(0, moveAmount);  // 'down'
+    }
+
+    Timer.periodic(moveInterval, (timer) {
+      if (!mounted) { timer.cancel(); return; }
+
+      final idx = _activeBolts.indexWhere((b) => b['id'] == id);
+      if (idx < 0) { timer.cancel(); return; }
+
+      final newPos = (_activeBolts[idx]['position'] as Offset) + delta;
+
+      if (newPos.dx < -60 || newPos.dx > 1060 || newPos.dy < -60 || newPos.dy > 860) {
+        setState(() => _activeBolts.removeAt(idx));
+        timer.cancel();
+        return;
+      }
+
+      setState(() => _activeBolts[idx]['position'] = newPos);
+    });
+  }
+
   Future<void> _openDJMixerUrl() async {
     final uri = Uri.parse('https://yuvi-rays-dvs.cacherefresh.io');
     if (await canLaunchUrl(uri)) {
@@ -2405,12 +2523,7 @@ class _SimpleCharacterViewState extends State<SimpleCharacterView> {
         );
         break;
       case 'Arcane Blast':
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Arcane energy bursts from your hands!'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        _castArcaneLightning();
         break;
     }
     
